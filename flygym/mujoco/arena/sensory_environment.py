@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple, List, Optional, Callable
+from typing import Tuple, List, Optional, Callable, Dict 
 from dm_control import mjcf
 
 from flygym.mujoco.util import load_config
@@ -26,6 +26,8 @@ class OdorArena(BaseArena):
         The peak intensity of the odor source. The shape of the array is
         (n_sources, n_dimensions). Note that the odor intensity can be
         multidimensional.
+    odor_valence : np.ndarray
+        The valence that is associated to its smell in a learning and memory context.
     num_odor_sources : int
         Number of odor sources.
     odor_dimensions : int
@@ -39,6 +41,11 @@ class OdorArena(BaseArena):
     birdeye_cam_zoom : dm_control.mujoco.Camera
          MuJoCo camera that gives a birdeye view of the arena, zoomed in
          toward the fly.
+    valence_dictionary : dictionary
+        Dictionary used to track the valence associated to each smell.
+        For each smell, a value for the key of the dictionary is computed 
+        to which the valence of the smell is associated in the dictionary. 
+
 
     Parameters
     ----------
@@ -57,6 +64,9 @@ class OdorArena(BaseArena):
         The peak intensity of the odor source. The shape of the array is
         (n_sources, n_dimensions). Note that the odor intensity can be
         multidimensional.
+    odor_valence : np.ndarray, optional
+        The valence that is associated to its smell in a learning and memory context.
+        The shape of the array is (n_sources, 1). Note that the odor valence can also be a float. 
     diffuse_func : Callable, optional
         The function that, given a distance from the odor source, returns
         the relative intensity of the odor. By default, this is a inverse
@@ -67,7 +77,7 @@ class OdorArena(BaseArena):
         The RGBA values should be given in the range [0, 1]. By default,
         the matplotlib color cycle is used.
     marker_size : float, optional
-        The size of the odor source markers, by default 0.25.
+        The size of the odor source markers, by default 0.25. 
     """
 
     def __init__(
@@ -77,6 +87,7 @@ class OdorArena(BaseArena):
         num_sensors: int = 4,
         odor_source: np.ndarray = np.array([[10, 0, 0]]),
         peak_intensity: np.ndarray = np.array([[1]]),
+        odor_valence: np.ndarray = np.array([[0]]),
         diffuse_func: Callable = lambda x: x**-2,
         marker_colors: Optional[List[Tuple[float, float, float, float]]] = None,
         marker_size: float = 0.25,
@@ -111,7 +122,15 @@ class OdorArena(BaseArena):
         self.num_sensors = num_sensors
         self.odor_source = np.array(odor_source)
         self.peak_odor_intensity = np.array(peak_intensity)
+        self.odor_valence = np.array(odor_valence)
         self.num_odor_sources = self.odor_source.shape[0]
+        self.valence_dictionary = {}
+
+        if self.odor_valence.shape[0] != self.odor_source.shape[0]:
+            raise ValueError(
+                "Number of valence values and peak intensities must match."
+            )
+
         if self.odor_source.shape[0] != self.peak_odor_intensity.shape[0]:
             raise ValueError(
                 "Number of odor source locations and peak intensities must match."
@@ -152,6 +171,11 @@ class OdorArena(BaseArena):
             marker_body.add(
                 "geom", type="capsule", size=(marker_size, marker_size), rgba=rgba
             )
+        
+        # Compute the key for each smell and update the dictionary
+        for i in range(self.num_odor_sources):
+            smell_key_value = self.compute_smell_key_value(self.peak_intensity[i])
+            self.valence_dictionary.update({smell_key_value: self.odor_valence[i]})
 
         # Reshape odor source and peak intensity arrays to simplify future claculations
         _odor_source_repeated = self.odor_source[:, np.newaxis, np.newaxis, :]
@@ -208,3 +232,12 @@ class OdorArena(BaseArena):
     @property
     def odor_dimensions(self) -> int:
         return self.peak_odor_intensity.shape[1]
+    
+    def compute_smell_key_value(self, peak_intensity):
+        """Method to compute the key used to store the smell into the valence_dictionary. 
+        The attractive component I1 of the smell is multiplied by 1, 
+        the aversive I2 by -1 and we choose to take max(|I1|, |-I2|)"""
+        weights = np.array([[1,0], [0,-1]])
+        key_value_array = np.dot(peak_intensity, weights)
+        key_value = key_value_array.flat[np.abs(key_value_array).argmax()]
+        return key_value

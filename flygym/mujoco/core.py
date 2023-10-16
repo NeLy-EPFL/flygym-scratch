@@ -254,6 +254,10 @@ class NeuroMechFly(gym.Env):
         in which time steps the visual inputs have been refreshed. In other
         words, the visual input frames where this mask is False are
         repititions of the previous updated visual input frames.
+    fly_valence_dictionary : dictionary
+        Dictionary used to track the valence associated to each smell.
+        For each smell, a value for the key of the dictionary is computed 
+        to which the valence of the smell is associated in the dictionary.
     """
 
     _mujoco_config = util.load_config()
@@ -272,6 +276,7 @@ class NeuroMechFly(gym.Env):
         floor_collisions: Union[str, List[str]] = "legs",
         self_collisions: Union[str, List[str]] = "legs",
         detect_flip: bool = False,
+        fly_valence_dictionary: Dict = {},
     ) -> None:
         """Initialize a NeuroMechFly environment.
 
@@ -322,6 +327,11 @@ class NeuroMechFly(gym.Env):
             beginning of the simulation as defined in the configuration
             file. This avoid spurious detection when the fly is not
             standing reliably on the ground yet. By default False.
+        fly_valence_dictionary : dictionary
+            Dictionary used to track the valence associated to each smell.
+            For each smell, a value for the key of the dictionary is computed 
+            to which the valence of the smell is associated in the dictionary.
+            
         """
         if sim_params is None:
             sim_params = Parameters()
@@ -349,6 +359,10 @@ class NeuroMechFly(gym.Env):
         self._last_tarsalseg_names = [
             f"{side}{pos}Tarsus5" for side in "LR" for pos in "FMH"
         ]
+        if not(bool(fly_valence_dictionary)):
+            self.fly_valence_dictionary = {}
+        else:
+            self.fly_valence_dictionary = fly_valence_dictionary
 
         if self.sim_params.draw_contacts and "cv2" not in sys.modules:
             logging.warning(
@@ -538,6 +552,8 @@ class NeuroMechFly(gym.Env):
             "render_modes": ["saved", "headless"],
             "render_fps": sim_params.render_fps,
         }
+
+        self.fly_valence_dictionary = {}
 
     def _configure_eyes(self):
         for name in ["LEye_cam", "REye_cam"]:
@@ -1799,6 +1815,44 @@ class NeuroMechFly(gym.Env):
         """Close the environment, save data, and release any resources."""
         if self.render_mode == "saved" and self.output_dir is not None:
             self.save_video(self.output_dir / "video.mp4")
+
+    def respawn(self) -> None:
+        """Respawn the fly in the initial position to start again exploring, 
+        the same fly_valence_dictionary is kept for the fly"""
+        self.arena.spawn_entity(self.model, self.spawn_pos, self.spawn_orientation)
+
+    def get_reward(self):
+        """
+        Notes
+        -----
+        w = 4: number of sensors (2x antennae + 2x max. palps)
+        3: spatial dimensionality
+        k: data dimensionality
+        n: number of odor sources
+
+        Input - odor source position: [n, 3]
+        Input - sensor positions: [w, 3]
+        Input - peak intensity: [n, k]
+        Input - difusion function: f(dist)
+
+        Reshape sources to S = [n, k*, w*, 3] (* means repeated)
+        Reshape sensor position to A = [n*, k*, w, 3] (* means repeated)
+        Subtract, getting an Delta = [n, k, w, 3] array of rel difference
+        Calculate Euclidean disctance: D = [n, k, w]
+
+        Apply pre-integrated difusion function: S = f(D) -> [n, k, w]
+        Reshape peak intensities to P = [n, k, w*]
+        Apply scaling: I = P * S -> [n, k, w] element wise
+
+        Output - Sum over the first axis: [k, w]
+        """
+        antennae_pos = self.physics.bind(self._antennae_sensors).sensordata
+        _odor_source_repeated = self.arena._odor_source_repeated
+        antennae_pos_repeated = antennae_pos[np.newaxis, np.newaxis, :, :]
+        dist_3d = antennae_pos_repeated - _odor_source_repeated  # (n, k, w, 3)
+        dist_euc = np.linalg.norm(dist_3d, axis=3)  # (n, k, w)
+
+        """if dist_euc smaller than a treshold, compute the key and add it to dictionary if it doeesnt exists, else nothing""""
 
 
 class MuJoCoParameters(Parameters):
