@@ -262,6 +262,7 @@ class NeuroMechFly(gym.Env):
         self,
         sim_params: Parameters = None,
         actuated_joints: List = preprogrammed.all_leg_dofs,
+        unactuated_joints_sensors: Optional[List[str]] = None,
         contact_sensor_placements: List = preprogrammed.all_tarsi_links,
         output_dir: Optional[Path] = None,
         arena: BaseArena = None,
@@ -282,6 +283,10 @@ class NeuroMechFly(gym.Env):
         actuated_joints : List[str], optional
             List of names of actuated joints. By default all active leg
             DoFs.
+        unactuated_joints_sensors : List[str], optional
+            List of names of joints that are not actuated but should be
+            included in the simulation's observation (in addition to the
+            actuated joints). By default None.
         contact_sensor_placements : List[str], optional
             List of body segments where contact sensors are placed. By
             default all tarsus segments.
@@ -329,6 +334,9 @@ class NeuroMechFly(gym.Env):
             arena = FlatTerrain()
         self.sim_params = deepcopy(sim_params)
         self.actuated_joints = actuated_joints
+        self.all_joint_sensors = actuated_joints.copy()
+        if unactuated_joints_sensors is not None:
+            self.all_joint_sensors.extend(unactuated_joints_sensors)
         self.contact_sensor_placements = contact_sensor_placements
         self.timestep = sim_params.timestep
         if output_dir is not None:
@@ -885,7 +893,7 @@ class NeuroMechFly(gym.Env):
 
     def _add_joint_sensors(self):
         joint_sensors = []
-        for joint in self.actuated_joints:
+        for joint in self.all_joint_sensors:
             joint_sensors.extend(
                 [
                     self.model.sensor.add(
@@ -1579,9 +1587,9 @@ class NeuroMechFly(gym.Env):
             The observation as defined by the environment.
         """
         # joint sensors
-        joint_obs = np.zeros((3, len(self.actuated_joints)))
+        joint_obs = np.zeros((3, len(self.all_joint_sensors)))
         joint_sensordata = self.physics.bind(self._joint_sensors).sensordata
-        for i, joint in enumerate(self.actuated_joints):
+        for i, joint in enumerate(self.all_joint_sensors):
             base_idx = i * 5
             # pos and vel
             joint_obs[:2, i] = joint_sensordata[base_idx : base_idx + 2]
