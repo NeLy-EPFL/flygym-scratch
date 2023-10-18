@@ -240,4 +240,6 @@ class OdorArena(BaseArena):
         weights = np.array([[1,0], [0,-1]])
         key_value_array = np.dot(peak_intensity, weights)
         key_value = key_value_array.flat[np.abs(key_value_array).argmax()]
+        if np.abs(key_value_array).argmax() == 1:
+            key_value = -key_value
         return key_value
