@@ -1713,8 +1713,8 @@ class NeuroMechFly(gym.Env):
                 reward = self.arena.valence_dictionary.get(smell_key_value)
                 self.fly_valence_dictionary.update(({smell_key_value: reward}))
                 truncated = True
-            print("smell", i)
-            print(truncated)
+            #print("smell", i)
+            #print(truncated)
             if truncated:
                 break#return reward, truncated
         
