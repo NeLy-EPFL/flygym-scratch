@@ -1225,6 +1225,7 @@ class NeuroMechFly(gym.Env):
         self._curr_visual_input = None
         self._vision_update_mask = []
         self._flip_counter = 0
+        self.fly_valence_dictionary = {}
         return self.get_observation(), self.get_info()
 
     def step(
