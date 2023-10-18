@@ -156,21 +156,64 @@ class OdorArena(BaseArena):
         )
 
         # Add markers at the odor sources
+        # If no colors are given we will assign colors depending on the intensities of the peaks, which we will use to change the color
+        # Aversive : red, attractive : blue, neutral : green
         if marker_colors is None:
-            color_cycle_rgb = load_config()["color_cycle_rgb"]
             marker_colors = []
             num_odor_sources = self.odor_source.shape[0]
+            intensity_norms = []
+            norm_intensities = self.peak_odor_intensity
+
+            # First normalize the peak intensities
             for i in range(num_odor_sources):
-                rgb = np.array(color_cycle_rgb[i % num_odor_sources]) / 255
-                rgba = (*rgb, 1)
-                marker_colors.append(rgba)
+                intensity_norms.append(np.linalg.norm(norm_intensities[i]))
+            # If any norms are over 100, normalize all intensities by the same factor
+            max_norm = np.max(intensity_norms)
+            if max_norm > 100:
+                norm_intensities = norm_intensities / (max_norm/100)
+            
+            # Then assign colors depending on the valence of the odor
+            for i in range(num_odor_sources):
+                curr_intensity = norm_intensities[i]
+                # white marker for (quasi-)nonexistant odor
+                if(curr_intensity[0] < 1e-2 and curr_intensity[1] < 1e-2):
+                    marker_colors.append([255, 255, 255, 1])
+                # red marker for purely attractive odor
+                elif(curr_intensity[0] > 1e-2 and curr_intensity[1] < 1e-2):
+                    alpha = 0.1 + (0.9 * curr_intensity[0]/100)
+                    marker_colors.append([255, 0, 0, alpha])
+                # blue marker for purely aversive odor
+                elif(curr_intensity[0] < 1e-2 and curr_intensity[1] > 1e-2):
+                    alpha = 0.1 + (0.9 * curr_intensity[1]/100)
+                    marker_colors.append([0, 0, 255, alpha])
+                # mixed odors have a color depending on the ratio between the attractive and aversive components
+                else:
+                    comp_attractive = curr_intensity[0]
+                    comp_aversive = curr_intensity[1]
+                    total = comp_attractive + comp_aversive
+                    alpha = 0.1 + (0.9 * np.linalg.norm(curr_intensity)/100)
+                    if(comp_attractive > comp_aversive):
+                        ratio = comp_aversive/total
+                        if ratio < 0.25:
+                            marker_colors.append([0, int(ratio*255), 255, alpha])
+                        else:
+                            marker_colors.append([0, 255, int((ratio-0.25)*255), alpha])
+                    else :
+                        ratio = comp_attractive/total
+                        if ratio < 0.25:
+                            marker_colors.append([255, int(ratio*255), 0, alpha])
+                        else:
+                            marker_colors.append([int((ratio-0.25)*255), 255, 0, alpha])
+
+
         for i, (pos, rgba) in enumerate(zip(self.odor_source, marker_colors)):
             marker_body = self.root_element.worldbody.add(
                 "body", name=f"odor_source_marker_{i}", pos=pos, mocap=True
             )
-            marker_body.add(
+            marker_body.add(    
                 "geom", type="capsule", size=(marker_size, marker_size), rgba=rgba
             )
+        
         
         # Compute the key for each smell and update the dictionary
         for i in range(self.num_odor_sources):
