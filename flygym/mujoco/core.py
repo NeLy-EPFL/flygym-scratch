@@ -1847,11 +1847,11 @@ class NeuroMechFly(gym.Env):
 
         Output - Sum over the first axis: [k, w]
         """
-        antennae_pos = self.physics.bind(self._antennae_sensors).sensordata
+        """antennae_pos = self.physics.bind(self._antennae_sensors).sensordata
         _odor_source_repeated = self.arena._odor_source_repeated
         antennae_pos_repeated = antennae_pos[np.newaxis, np.newaxis, :, :]
         dist_3d = antennae_pos_repeated - _odor_source_repeated  # (n, k, w, 3)
-        dist_euc = np.linalg.norm(dist_3d, axis=3)  # (n, k, w)
+        dist_euc = np.linalg.norm(dist_3d, axis=3)  # (n, k, w)"""
 
         """if dist_euc smaller than a treshold, compute the key and add it to dictionary if it doeesnt exists, else nothing"""
 
