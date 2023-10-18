@@ -118,6 +118,7 @@ class OdorArena(BaseArena):
             size=ground_size,
             friction=friction,
         )
+        self.size = ground_size
         self.friction = friction
         self.num_sensors = num_sensors
         self.odor_source = np.array(odor_source)
@@ -205,7 +206,6 @@ class OdorArena(BaseArena):
                         else:
                             marker_colors.append([int((ratio-0.25)*255), 255, 0, alpha])
 
-
         for i, (pos, rgba) in enumerate(zip(self.odor_source, marker_colors)):
             marker_body = self.root_element.worldbody.add(
                 "body", name=f"odor_source_marker_{i}", pos=pos, mocap=True
@@ -218,8 +218,6 @@ class OdorArena(BaseArena):
         # Compute the key for each smell and update the dictionary
         for i in range(self.num_odor_sources):
             smell_key_value = self.compute_smell_key_value(self.peak_odor_intensity[i])
-            print(smell_key_value)
-            print(self.valence_dictionary)
             self.valence_dictionary.update({smell_key_value: self.odor_valence[i]})
 
         # Reshape odor source and peak intensity arrays to simplify future claculations
@@ -284,6 +282,5 @@ class OdorArena(BaseArena):
         the aversive I2 by -1 and we choose to take max(|I1|, |-I2|)"""
         weights = np.array([[1,0], [0,-1]])
         key_value_array = np.dot(peak_intensity, weights)
-        print(key_value_array)
         key_value = key_value_array.flat[np.abs(key_value_array).argmax()]
         return key_value

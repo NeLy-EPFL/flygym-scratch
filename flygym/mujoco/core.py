@@ -1265,7 +1265,7 @@ class NeuroMechFly(gym.Env):
         self.physics.step()
         self.curr_time += self.timestep
         observation = self.get_observation()
-        reward = self.get_reward()
+        reward = self.get_reward(observation)
         terminated = self.is_terminated()
         truncated = self.is_truncated()
         info = self.get_info()
@@ -1701,16 +1701,23 @@ class NeuroMechFly(gym.Env):
 
         return obs
 
-    def get_reward(self):
-        """Get the reward for the current state of the environment. This
-        method always returns 0 unless extended by the user.
-
-        Returns
-        -------
-        float
-            The reward.
-        """
-        return 0
+    def get_reward(self, obs):
+        """Get the reward for the current state of the environment"""
+        truncated = False
+        reward = 0
+        for i in range(len(self.arena.odor_source)):
+            #if fly is within 2mm of the attractive odor source
+            if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) < 2:
+                #the fly gets the reward
+                smell_key_value = self.arena.compute_smell_key_value(self.arena.peak_odor_intensity[i])
+                reward = self.arena.valence_dictionary.get(smell_key_value)
+                self.fly_valence_dictionary.update(({smell_key_value: reward}))
+                truncated = True
+            print("smell", i)
+            print(truncated)
+            if truncated:
+                break#return reward, truncated
+        
 
     def is_terminated(self):
         """Whether the episode has terminated due to factors that are
@@ -1821,39 +1828,6 @@ class NeuroMechFly(gym.Env):
         """Respawn the fly in the initial position to start again exploring, 
         the same fly_valence_dictionary is kept for the fly"""
         self.arena.spawn_entity(self.model, self.spawn_pos, self.spawn_orientation)
-
-    def get_reward(self):
-        """
-        Notes
-        -----
-        w = 4: number of sensors (2x antennae + 2x max. palps)
-        3: spatial dimensionality
-        k: data dimensionality
-        n: number of odor sources
-
-        Input - odor source position: [n, 3]
-        Input - sensor positions: [w, 3]
-        Input - peak intensity: [n, k]
-        Input - difusion function: f(dist)
-
-        Reshape sources to S = [n, k*, w*, 3] (* means repeated)
-        Reshape sensor position to A = [n*, k*, w, 3] (* means repeated)
-        Subtract, getting an Delta = [n, k, w, 3] array of rel difference
-        Calculate Euclidean disctance: D = [n, k, w]
-
-        Apply pre-integrated difusion function: S = f(D) -> [n, k, w]
-        Reshape peak intensities to P = [n, k, w*]
-        Apply scaling: I = P * S -> [n, k, w] element wise
-
-        Output - Sum over the first axis: [k, w]
-        """
-        """antennae_pos = self.physics.bind(self._antennae_sensors).sensordata
-        _odor_source_repeated = self.arena._odor_source_repeated
-        antennae_pos_repeated = antennae_pos[np.newaxis, np.newaxis, :, :]
-        dist_3d = antennae_pos_repeated - _odor_source_repeated  # (n, k, w, 3)
-        dist_euc = np.linalg.norm(dist_3d, axis=3)  # (n, k, w)"""
-
-        """if dist_euc smaller than a treshold, compute the key and add it to dictionary if it doeesnt exists, else nothing"""
 
 
 class MuJoCoParameters(Parameters):
