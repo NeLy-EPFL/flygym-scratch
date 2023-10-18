@@ -1853,7 +1853,7 @@ class NeuroMechFly(gym.Env):
         dist_3d = antennae_pos_repeated - _odor_source_repeated  # (n, k, w, 3)
         dist_euc = np.linalg.norm(dist_3d, axis=3)  # (n, k, w)
 
-        """if dist_euc smaller than a treshold, compute the key and add it to dictionary if it doeesnt exists, else nothing""""
+        """if dist_euc smaller than a treshold, compute the key and add it to dictionary if it doeesnt exists, else nothing"""
 
 
 class MuJoCoParameters(Parameters):

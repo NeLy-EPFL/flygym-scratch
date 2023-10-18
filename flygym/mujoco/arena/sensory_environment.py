@@ -174,7 +174,7 @@ class OdorArena(BaseArena):
         
         # Compute the key for each smell and update the dictionary
         for i in range(self.num_odor_sources):
-            smell_key_value = self.compute_smell_key_value(self.peak_intensity[i])
+            smell_key_value = self.compute_smell_key_value(self.peak_odor_intensity[i])
             self.valence_dictionary.update({smell_key_value: self.odor_valence[i]})
 
         # Reshape odor source and peak intensity arrays to simplify future claculations
