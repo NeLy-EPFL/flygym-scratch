@@ -258,6 +258,9 @@ class NeuroMechFly(gym.Env):
         Dictionary used to track the valence associated to each smell.
         For each smell, a value for the key of the dictionary is computed 
         to which the valence of the smell is associated in the dictionary.
+    simulation_time : float
+        The total time allowed for the simulation. By deaault it is equal 
+        to 5.
     """
 
     _mujoco_config = util.load_config()
@@ -277,6 +280,7 @@ class NeuroMechFly(gym.Env):
         self_collisions: Union[str, List[str]] = "legs",
         detect_flip: bool = False,
         fly_valence_dictionary: Dict = {},
+        simulation_time: float = 5,
     ) -> None:
         """Initialize a NeuroMechFly environment.
 
@@ -1824,10 +1828,10 @@ class NeuroMechFly(gym.Env):
         if self.render_mode == "saved" and self.output_dir is not None:
             self.save_video(self.output_dir / "video.mp4")
 
-    def respawn(self) -> None:
+    def respawn(self, arena) -> None:
         """Respawn the fly in the initial position to start again exploring, 
         the same fly_valence_dictionary is kept for the fly"""
-        self.arena.spawn_entity(self.model, self.spawn_pos, self.spawn_orientation)
+        arena.spawn_entity(self.model, self.spawn_pos, self.spawn_orientation)
 
 
 class MuJoCoParameters(Parameters):

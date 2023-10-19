@@ -2,7 +2,6 @@ import numpy as np
 from abc import ABC, abstractmethod
 from typing import Tuple, List, Dict, Any, Optional
 from dm_control import mjcf
-"""hey"""
 
 class BaseArena(ABC):
     """Base class for all arenas.

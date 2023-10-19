@@ -45,7 +45,10 @@ class OdorArena(BaseArena):
         Dictionary used to track the valence associated to each smell.
         For each smell, a value for the key of the dictionary is computed 
         to which the valence of the smell is associated in the dictionary. 
-
+    size: list
+        The size of the arena. It is needed to compute if the fly has exited 
+        the arena; if that's the case, we truncate the simulation and 
+        respwan the fly
 
     Parameters
     ----------
