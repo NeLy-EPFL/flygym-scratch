@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple, List, Optional, Callable, Dict 
+from typing import Tuple, List, Optional, Callable, Dict
 from dm_control import mjcf
 
 from flygym.mujoco.util import load_config
@@ -43,11 +43,11 @@ class OdorArena(BaseArena):
          toward the fly.
     valence_dictionary : dictionary
         Dictionary used to track the valence associated to each smell.
-        For each smell, a value for the key of the dictionary is computed 
-        to which the valence of the smell is associated in the dictionary. 
+        For each smell, a value for the key of the dictionary is computed
+        to which the valence of the smell is associated in the dictionary.
     size: list
-        The size of the arena. It is needed to compute if the fly has exited 
-        the arena; if that's the case, we truncate the simulation and 
+        The size of the arena. It is needed to compute if the fly has exited
+        the arena; if that's the case, we truncate the simulation and
         respwan the fly
 
     Parameters
@@ -69,7 +69,7 @@ class OdorArena(BaseArena):
         multidimensional.
     odor_valence : np.ndarray, optional
         The valence that is associated to its smell in a learning and memory context.
-        The shape of the array is (n_sources, 1). Note that the odor valence can also be a float. 
+        The shape of the array is (n_sources, 1). Note that the odor valence can also be a float.
     diffuse_func : Callable, optional
         The function that, given a distance from the odor source, returns
         the relative intensity of the odor. By default, this is a inverse
@@ -80,7 +80,7 @@ class OdorArena(BaseArena):
         The RGBA values should be given in the range [0, 1]. By default,
         the matplotlib color cycle is used.
     marker_size : float, optional
-        The size of the odor source markers, by default 0.25. 
+        The size of the odor source markers, by default 0.25.
     """
 
     def __init__(
@@ -174,50 +174,53 @@ class OdorArena(BaseArena):
             # If any norms are over 100, normalize all intensities by the same factor
             max_norm = np.max(intensity_norms)
             if max_norm > 100:
-                norm_intensities = norm_intensities / (max_norm/100)
-            
+                norm_intensities = norm_intensities / (max_norm / 100)
+
             # Then assign colors depending on the valence of the odor
             for i in range(num_odor_sources):
                 curr_intensity = norm_intensities[i]
                 # white marker for (quasi-)nonexistant odor
-                if(curr_intensity[0] < 1e-2 and curr_intensity[1] < 1e-2):
+                if curr_intensity[0] < 1e-2 and curr_intensity[1] < 1e-2:
                     marker_colors.append([255, 255, 255, 1])
                 # red marker for purely attractive odor
-                elif(curr_intensity[0] > 1e-2 and curr_intensity[1] < 1e-2):
-                    alpha = 0.1 + (0.9 * curr_intensity[0]/100)
+                elif curr_intensity[0] > 1e-2 and curr_intensity[1] < 1e-2:
+                    alpha = 0.1 + (0.9 * curr_intensity[0] / 100)
                     marker_colors.append([255, 0, 0, alpha])
                 # blue marker for purely aversive odor
-                elif(curr_intensity[0] < 1e-2 and curr_intensity[1] > 1e-2):
-                    alpha = 0.1 + (0.9 * curr_intensity[1]/100)
+                elif curr_intensity[0] < 1e-2 and curr_intensity[1] > 1e-2:
+                    alpha = 0.1 + (0.9 * curr_intensity[1] / 100)
                     marker_colors.append([0, 0, 255, alpha])
                 # mixed odors have a color depending on the ratio between the attractive and aversive components
                 else:
                     comp_attractive = curr_intensity[0]
                     comp_aversive = curr_intensity[1]
                     total = comp_attractive + comp_aversive
-                    alpha = 0.1 + (0.9 * np.linalg.norm(curr_intensity)/100)
-                    if(comp_attractive > comp_aversive):
-                        ratio = comp_aversive/total
+                    alpha = 0.1 + (0.9 * np.linalg.norm(curr_intensity) / 100)
+                    if comp_attractive > comp_aversive:
+                        ratio = comp_aversive / total
                         if ratio < 0.25:
-                            marker_colors.append([0, int(ratio*255), 255, alpha])
+                            marker_colors.append([0, int(ratio * 255), 255, alpha])
                         else:
-                            marker_colors.append([0, 255, int((ratio-0.25)*255), alpha])
-                    else :
-                        ratio = comp_attractive/total
+                            marker_colors.append(
+                                [0, 255, int((ratio - 0.25) * 255), alpha]
+                            )
+                    else:
+                        ratio = comp_attractive / total
                         if ratio < 0.25:
-                            marker_colors.append([255, int(ratio*255), 0, alpha])
+                            marker_colors.append([255, int(ratio * 255), 0, alpha])
                         else:
-                            marker_colors.append([int((ratio-0.25)*255), 255, 0, alpha])
+                            marker_colors.append(
+                                [int((ratio - 0.25) * 255), 255, 0, alpha]
+                            )
 
         for i, (pos, rgba) in enumerate(zip(self.odor_source, marker_colors)):
             marker_body = self.root_element.worldbody.add(
                 "body", name=f"odor_source_marker_{i}", pos=pos, mocap=True
             )
-            marker_body.add(    
+            marker_body.add(
                 "geom", type="capsule", size=(marker_size, marker_size), rgba=rgba
             )
-        
-        
+
         # Compute the key for each smell and update the dictionary
         for i in range(self.num_odor_sources):
             smell_key_value = self.compute_smell_key_value(self.peak_odor_intensity[i])
@@ -278,12 +281,12 @@ class OdorArena(BaseArena):
     @property
     def odor_dimensions(self) -> int:
         return self.peak_odor_intensity.shape[1]
-    
+
     def compute_smell_key_value(self, peak_intensity):
-        """Method to compute the key used to store the smell into the valence_dictionary. 
-        The attractive component I1 of the smell is multiplied by 1, 
+        """Method to compute the key used to store the smell into the valence_dictionary.
+        The attractive component I1 of the smell is multiplied by 1,
         the aversive I2 by -1 and we choose to take max(|I1|, |-I2|)"""
-        weights = np.array([[1,0], [0,-1]])
+        weights = np.array([[1, 0], [0, -1]])
         key_value_array = np.dot(peak_intensity, weights)
         key_value = key_value_array.flat[np.abs(key_value_array).argmax()]
         return key_value

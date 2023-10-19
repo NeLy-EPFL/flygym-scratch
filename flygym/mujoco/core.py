@@ -256,10 +256,10 @@ class NeuroMechFly(gym.Env):
         repititions of the previous updated visual input frames.
     fly_valence_dictionary : dictionary
         Dictionary used to track the valence associated to each smell.
-        For each smell, a value for the key of the dictionary is computed 
+        For each smell, a value for the key of the dictionary is computed
         to which the valence of the smell is associated in the dictionary.
     simulation_time : float
-        The total time allowed for the simulation. By deaault it is equal 
+        The total time allowed for the simulation. By deaault it is equal
         to 5.
     """
 
@@ -333,9 +333,12 @@ class NeuroMechFly(gym.Env):
             standing reliably on the ground yet. By default False.
         fly_valence_dictionary : dictionary
             Dictionary used to track the valence associated to each smell.
-            For each smell, a value for the key of the dictionary is computed 
+            For each smell, a value for the key of the dictionary is computed
             to which the valence of the smell is associated in the dictionary.
-            
+        simulation_time : float
+            The total time allowed for the simulation. By deaault it is equal
+            to 5.
+
         """
         if sim_params is None:
             sim_params = Parameters()
@@ -363,10 +366,15 @@ class NeuroMechFly(gym.Env):
         self._last_tarsalseg_names = [
             f"{side}{pos}Tarsus5" for side in "LR" for pos in "FMH"
         ]
-        if not(bool(fly_valence_dictionary)):
+        if not (bool(fly_valence_dictionary)):
             self.fly_valence_dictionary = {}
         else:
             self.fly_valence_dictionary = fly_valence_dictionary
+
+        self.simulation_time = simulation_time
+
+        if self.simulation_time <= 0:
+            raise ValueError("Simulation time must be greater than zero.")
 
         if self.sim_params.draw_contacts and "cv2" not in sys.modules:
             logging.warning(
@@ -1710,18 +1718,19 @@ class NeuroMechFly(gym.Env):
         truncated = False
         reward = 0
         for i in range(len(self.arena.odor_source)):
-            #if fly is within 2mm of the attractive odor source
+            # if fly is within 2mm of the attractive odor source
             if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) < 2:
-                #the fly gets the reward
-                smell_key_value = self.arena.compute_smell_key_value(self.arena.peak_odor_intensity[i])
+                # the fly gets the reward
+                smell_key_value = self.arena.compute_smell_key_value(
+                    self.arena.peak_odor_intensity[i]
+                )
                 reward = self.arena.valence_dictionary.get(smell_key_value)
                 self.fly_valence_dictionary.update(({smell_key_value: reward}))
                 truncated = True
-            #print("smell", i)
-            #print(truncated)
+            # print("smell", i)
+            print(truncated)
             if truncated:
-                break#return reward, truncated
-        
+                break  # return reward, truncated
 
     def is_terminated(self):
         """Whether the episode has terminated due to factors that are
@@ -1734,7 +1743,13 @@ class NeuroMechFly(gym.Env):
         bool
             Whether the simulation is terminated.
         """
-        return False
+        if self.curr_time <= self.simulation_time:
+            return False
+        else:
+            logging.info(
+                "Time for the simulation has elapsed. Simulation is terminated"
+            )
+            return True
 
     def is_truncated(self):
         """Whether the episode has terminated due to factors beyond the
@@ -1829,7 +1844,7 @@ class NeuroMechFly(gym.Env):
             self.save_video(self.output_dir / "video.mp4")
 
     def respawn(self, arena) -> None:
-        """Respawn the fly in the initial position to start again exploring, 
+        """Respawn the fly in the initial position to start again exploring,
         the same fly_valence_dictionary is kept for the fly"""
         arena.spawn_entity(self.model, self.spawn_pos, self.spawn_orientation)
 

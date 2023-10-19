@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Tuple, List, Dict, Any, Optional
 from dm_control import mjcf
 
+
 class BaseArena(ABC):
     """Base class for all arenas.
 
