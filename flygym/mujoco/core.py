@@ -1715,8 +1715,7 @@ class NeuroMechFly(gym.Env):
 
     def get_reward(self, obs):
         """Get the reward for the current state of the environment"""
-        truncated = False
-        reward = 0
+        #truncated = False
         for i in range(len(self.arena.odor_source)):
             # if fly is within 2mm of the attractive odor source
             if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) < 2:
@@ -1726,11 +1725,14 @@ class NeuroMechFly(gym.Env):
                 )
                 reward = self.arena.valence_dictionary.get(smell_key_value)
                 self.fly_valence_dictionary.update(({smell_key_value: reward}))
-                truncated = True
+                return reward
+        return 0
+                #truncated = True
             # print("smell", i)
-            print(truncated)
-            if truncated:
-                break  # return reward, truncated
+            #print(truncated)
+            #if truncated:
+                #break  # return reward, truncated
+        
 
     def is_terminated(self):
         """Whether the episode has terminated due to factors that are
