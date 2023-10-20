@@ -1,4 +1,5 @@
 import numpy as np
+import random
 from typing import Tuple, List, Optional, Callable, Dict
 from dm_control import mjcf
 
@@ -285,3 +286,33 @@ class OdorArena(BaseArena):
         key_value_array = np.dot(peak_intensity, weights)
         key_value = key_value_array.flat[np.abs(key_value_array).argmax()]
         return key_value
+
+    def generate_random_gains(self, explore: bool = True):
+        """Method to compute random numbers of opposite signed assigned 
+        to the attractive, aversive gains. 
+        The range of gains is [0, 500]. The gain with the highest 
+        absolute value has negative sign.
+        If explore is true, the fly is free to explore around the arena, 
+        going both to attractive and aversive gains. 
+        Once the fly has explored everything, it will go to the source with the highest reward,
+        so we will set the highest gain for that type of source
+        """
+        x = np.random.randint(500)
+        y = np.random.randint(200)
+        if explore:
+            sign = random.choice((-1, 1))
+            attractive_gain = sign * x
+            aversive_gain = -sign * y
+            if not (np.abs(attractive_gain) and np.sign(attractive_gain) < 0):
+                attractive_gain = -attractive_gain
+                aversive_gain = -aversive_gain
+        else:
+            max_key = max(self.valence_dictionary, key=self.valence_dictionary.get)
+            if max_key > 0:
+                attractive_gain = - max(x,y)
+                aversive_gain = min(x,y)
+            else:
+                attractive_gain = min(x,y)
+                aversive_gain = -max(x,y)
+        return attractive_gain, aversive_gain
+
