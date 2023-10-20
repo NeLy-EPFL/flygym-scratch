@@ -1279,7 +1279,7 @@ class NeuroMechFly(gym.Env):
         observation = self.get_observation()
         reward = self.get_reward(observation)
         terminated = self.is_terminated()
-        truncated = self.is_truncated()
+        truncated = self.is_truncated(observation)
         info = self.get_info()
 
         if self.detect_flip:
@@ -1717,7 +1717,7 @@ class NeuroMechFly(gym.Env):
         """Get the reward for the current state of the environment"""
         #truncated = False
         for i in range(len(self.arena.odor_source)):
-            # if fly is within 2mm of the attractive odor source
+            # if fly is within 2mm of the attractive/aversive odor source
             if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) < 2:
                 # the fly gets the reward
                 smell_key_value = self.arena.compute_smell_key_value(
@@ -1726,12 +1726,6 @@ class NeuroMechFly(gym.Env):
                 reward = self.arena.valence_dictionary.get(smell_key_value)
                 self.fly_valence_dictionary.update(({smell_key_value: reward}))
                 return reward
-        return 0
-                #truncated = True
-            # print("smell", i)
-            #print(truncated)
-            #if truncated:
-                #break  # return reward, truncated
         
 
     def is_terminated(self):
@@ -1753,7 +1747,7 @@ class NeuroMechFly(gym.Env):
             )
             return True
 
-    def is_truncated(self):
+    def is_truncated(self, obs):
         """Whether the episode has terminated due to factors beyond the
             Markov Decision Process (eg. time limit, etc). This method
             always returns False unless extended by the user.
@@ -1763,7 +1757,14 @@ class NeuroMechFly(gym.Env):
         bool
             Whether the simulation is truncated.
         """
-        return False
+
+        """
+        for i in range(len(self.arena.odor_source)):
+            # if fly is at least 30 mm away from any odor source  
+            if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) > 30:
+                return True
+        
+        return False"""
 
     def get_info(self):
         """Any additional information that is not part of the observation.
