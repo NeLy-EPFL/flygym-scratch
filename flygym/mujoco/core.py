@@ -281,6 +281,7 @@ class NeuroMechFly(gym.Env):
         detect_flip: bool = False,
         fly_valence_dictionary: Dict = {},
         simulation_time: float = 5,
+        elapsed_time: float = 0,
     ) -> None:
         """Initialize a NeuroMechFly environment.
 
@@ -372,6 +373,7 @@ class NeuroMechFly(gym.Env):
             self.fly_valence_dictionary = fly_valence_dictionary
 
         self.simulation_time = simulation_time
+        self.elapsed_time = elapsed_time
 
         if self.simulation_time <= 0:
             raise ValueError("Simulation time must be greater than zero.")
@@ -1737,7 +1739,7 @@ class NeuroMechFly(gym.Env):
         bool
             Whether the simulation is terminated.
         """
-        if self.curr_time <= self.simulation_time:
+        if self.elapsed_time <= self.simulation_time:
             return False
         else:
             logging.info(

@@ -48,6 +48,8 @@ class HybridTurningNMF(NeuroMechFly):
         amplitude_range=(-0.5, 1.5),
         draw_corrections=False,
         fly_valence_dictionary: Dict = {},
+        elapsed_time: float = 0,
+        simulation_time: float = 5,
         seed=0,
         **kwargs,
     ):
@@ -73,6 +75,9 @@ class HybridTurningNMF(NeuroMechFly):
             self.fly_valence_dictionary = {}
         else:
             self.fly_valence_dictionary = fly_valence_dictionary
+
+        self.simulation_time = simulation_time
+        self.elapsed_time = elapsed_time
 
         # Define action and observation spaces
         self.action_space = spaces.Box(*amplitude_range, shape=(2,))
