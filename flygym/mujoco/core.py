@@ -1759,13 +1759,13 @@ class NeuroMechFly(gym.Env):
         """
         sources_far_away = 0
         for i in range(len(self.arena.odor_source)):
-            # if fly is at least 30 mm away from any odor source  
+            # If fly is at least 30 mm away from any odor source
             if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) > 25:
-                sources_far_away+=1
-        #if fly is away from all sources
+                sources_far_away += 1
+        # If fly is away from all sources
         if sources_far_away == len(self.arena.odor_source):
             return True
-        return False 
+        return False
 
     def get_info(self):
         """Any additional information that is not part of the observation.

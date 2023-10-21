@@ -288,12 +288,12 @@ class OdorArena(BaseArena):
         return key_value
 
     def generate_random_gains(self, explore: bool = True):
-        """Method to compute random numbers of opposite signed assigned 
-        to the attractive, aversive gains. 
-        The range of gains is [0, 500]. The gain with the highest 
+        """Method to compute random numbers of opposite signed assigned
+        to the attractive, aversive gains.
+        The range of gains is [0, 500]. The gain with the highest
         absolute value has negative sign.
-        If explore is true, the fly is free to explore around the arena, 
-        going both to attractive and aversive gains. 
+        If explore is true, the fly is free to explore around the arena,
+        going both to attractive and aversive gains.
         Once the fly has explored everything, it will go to the source with the highest reward,
         so we will set the highest gain for that type of source
         """
@@ -309,10 +309,9 @@ class OdorArena(BaseArena):
         else:
             max_key = max(self.valence_dictionary, key=self.valence_dictionary.get)
             if max_key > 0:
-                attractive_gain = - max(x,y)
-                aversive_gain = min(x,y)
+                attractive_gain = -max(x, y)
+                aversive_gain = min(x, y)
             else:
-                attractive_gain = min(x,y)
-                aversive_gain = -max(x,y)
+                attractive_gain = min(x, y)
+                aversive_gain = -max(x, y)
         return attractive_gain, aversive_gain
-

@@ -70,7 +70,7 @@ class HybridTurningNMF(NeuroMechFly):
         self.correction_rates = correction_rates
         self.amplitude_range = amplitude_range
         self.draw_corrections = draw_corrections
-        #add internal table
+        # Add internal table
         if len(fly_valence_dictionary) == 0:
             self.fly_valence_dictionary = {}
         else:
