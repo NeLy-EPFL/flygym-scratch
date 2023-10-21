@@ -261,6 +261,8 @@ class NeuroMechFly(gym.Env):
     simulation_time : float
         The total time allowed for the simulation. By deaault it is equal
         to 5.
+    elapsed_time : float
+            The total time since the fly has starting to explore.
     """
 
     _mujoco_config = util.load_config()
@@ -339,6 +341,8 @@ class NeuroMechFly(gym.Env):
         simulation_time : float
             The total time allowed for the simulation. By deaault it is equal
             to 5.
+        elapsed_time : float
+            The total time since the fly has starting to explore.
 
         """
         if sim_params is None:
@@ -1231,6 +1235,7 @@ class NeuroMechFly(gym.Env):
             if self.sim_params.align_camera_with_gravity:
                 self._camera_rot = np.eye(3)
         self.curr_time = 0
+        self.elapsed_time = 0
         self._set_init_pose(self.init_pose)
         self._frames = []
         self._last_render_time = -np.inf
@@ -1278,6 +1283,7 @@ class NeuroMechFly(gym.Env):
 
         self.physics.step()
         self.curr_time += self.timestep
+        self.elapsed_time += self.timestep
         observation = self.get_observation()
         reward = self.get_reward(observation)
         terminated = self.is_terminated()
@@ -1847,10 +1853,49 @@ class NeuroMechFly(gym.Env):
         if self.render_mode == "saved" and self.output_dir is not None:
             self.save_video(self.output_dir / "video.mp4")
 
-    def respawn(self, arena) -> None:
+    def respawn(
+        self, *, seed: Optional[int] = None, options: Optional[Dict] = None
+    ) -> Tuple[ObsType, Dict[str, Any]]:
         """Respawn the fly in the initial position to start again exploring,
-        the same fly_valence_dictionary is kept for the fly"""
-        arena.spawn_entity(self.model, self.spawn_pos, self.spawn_orientation)
+        the same fly_valence_dictionary is kept for the fly.
+        Reset the Gym environment.
+
+        Parameters
+        ----------
+        seed : int
+            Random seed for the environment. The provided base simulation
+            is deterministic, so this does not have an effect unless
+            extended by the user.
+        options : Dict
+            Additional parameter for the simulation. There is none in the
+            provided base simulation, so this does not have an effect
+            unless extended by the user.
+
+        Returns
+        -------
+        ObsType
+            The observation as defined by the environment.
+        Dict[str, Any]
+            Any additional information that is not part of the observation.
+            This is an empty dictionary by default but the user can
+            override this method to return additional information.
+        """
+        super().reset(seed=seed)
+        self.physics.reset()
+        if np.any(self.physics.model.opt.gravity[:] - self.sim_params.gravity > 1e-3):
+            self._set_gravity(self.sim_params.gravity)
+            if self.sim_params.align_camera_with_gravity:
+                self._camera_rot = np.eye(3)
+        self.curr_time = 0
+        self._set_init_pose(self.init_pose)
+        self._frames = []
+        self._last_render_time = -np.inf
+        self._last_vision_update_time = -np.inf
+        self._curr_raw_visual_input = None
+        self._curr_visual_input = None
+        self._vision_update_mask = []
+        self._flip_counter = 0
+        return self.get_observation(), self.get_info()
 
 
 class MuJoCoParameters(Parameters):
