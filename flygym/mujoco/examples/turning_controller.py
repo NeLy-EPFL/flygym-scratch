@@ -2,6 +2,7 @@ import numpy as np
 from tqdm import trange
 from gymnasium import spaces
 from gymnasium.utils.env_checker import check_env
+from typing import Dict
 
 from flygym.mujoco import Parameters, NeuroMechFly
 from flygym.mujoco.examples.common import PreprogrammedSteps
@@ -46,6 +47,7 @@ class HybridTurningNMF(NeuroMechFly):
         correction_rates=_default_correction_rates,
         amplitude_range=(-0.5, 1.5),
         draw_corrections=False,
+        fly_valence_dictionary: Dict = {},
         seed=0,
         **kwargs,
     ):
@@ -66,6 +68,11 @@ class HybridTurningNMF(NeuroMechFly):
         self.correction_rates = correction_rates
         self.amplitude_range = amplitude_range
         self.draw_corrections = draw_corrections
+        #add internal table
+        if len(fly_valence_dictionary) == 0:
+            self.fly_valence_dictionary = {}
+        else:
+            self.fly_valence_dictionary = fly_valence_dictionary
 
         # Define action and observation spaces
         self.action_space = spaces.Box(*amplitude_range, shape=(2,))

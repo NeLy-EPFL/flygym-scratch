@@ -366,7 +366,7 @@ class NeuroMechFly(gym.Env):
         self._last_tarsalseg_names = [
             f"{side}{pos}Tarsus5" for side in "LR" for pos in "FMH"
         ]
-        if not (bool(fly_valence_dictionary)):
+        if len(fly_valence_dictionary) == 0:
             self.fly_valence_dictionary = {}
         else:
             self.fly_valence_dictionary = fly_valence_dictionary
