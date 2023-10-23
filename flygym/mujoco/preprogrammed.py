@@ -92,6 +92,14 @@ def get_collision_geometries(config: str = "all") -> List[str]:
             for pos in "FMH"
             for dof in ["Tarsus1", "Tarsus2", "Tarsus3", "Tarsus4", "Tarsus5"]
         ]
+    elif config == "antenna":
+        return [
+            f"{side}{dof}_collision"
+            for side in "LR"
+            for dof in [
+            "Pedicel", "Funiculus", "Arista"
+            ]
+        ]
     elif config == "none":
         return []
     else:
