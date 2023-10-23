@@ -1745,7 +1745,7 @@ class NeuroMechFly(gym.Env):
         bool
             Whether the simulation is terminated.
         """
-        if self.elapsed_time <= self.simulation_time:
+        if self.curr_time <= self.simulation_time:
             return False
         else:
             logging.info(
@@ -1769,7 +1769,7 @@ class NeuroMechFly(gym.Env):
             if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) > 25:
                 sources_far_away += 1
         # If fly is away from all sources
-        if sources_far_away == len(self.arena.odor_source) or self.curr_time > 10:
+        if sources_far_away == len(self.arena.odor_source) or (self.curr_time > 10):
             return True
     
         return False
@@ -1887,7 +1887,8 @@ class NeuroMechFly(gym.Env):
             self._set_gravity(self.sim_params.gravity)
             if self.sim_params.align_camera_with_gravity:
                 self._camera_rot = np.eye(3)
-        self.curr_time = 0
+        #self.curr_time = 0
+        self.elapsed_time = 0
         self._set_init_pose(self.init_pose)
         #self._last_render_time = -np.inf
         #self._last_vision_update_time = -np.inf
