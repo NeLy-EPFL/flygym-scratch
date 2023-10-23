@@ -259,10 +259,11 @@ class NeuroMechFly(gym.Env):
         For each smell, a value for the key of the dictionary is computed
         to which the valence of the smell is associated in the dictionary.
     simulation_time : float
-        The total time allowed for the simulation. By deaault it is equal
+        The total time allowed for the simulation. By default it is equal
         to 5.
     elapsed_time : float
-            The total time since the fly has starting to explore.
+        The total time since the fly has starting to explore in the 
+        current sub-simulation.
     """
 
     _mujoco_config = util.load_config()
@@ -342,7 +343,8 @@ class NeuroMechFly(gym.Env):
             The total time allowed for the simulation. By deaault it is equal
             to 5.
         elapsed_time : float
-            The total time since the fly has starting to explore.
+            The total time since the fly has starting to explore
+            in the current sub-simulation.
 
         """
         if sim_params is None:
@@ -1738,7 +1740,8 @@ class NeuroMechFly(gym.Env):
         """Whether the episode has terminated due to factors that are
         defined within the Markov Decision Process (eg. task completion/
         failure, etc). This method always returns False unless extended by
-        the user.
+        the user. In this case, the episode is terminated if the time elapsed 
+        is bigger than the allowed time for the simulation
 
         Returns
         -------
@@ -1756,7 +1759,9 @@ class NeuroMechFly(gym.Env):
     def is_truncated(self, obs):
         """Whether the episode has terminated due to factors beyond the
             Markov Decision Process (eg. time limit, etc). This method
-            always returns False unless extended by the user.
+            always returns False unless extended by the user. In this scenario,
+            it is truncated if the fly is too far away from any smell or 
+            if the time of the current sub-simulation has exceed a certain trehsold
 
         Returns
         -------
@@ -1768,10 +1773,11 @@ class NeuroMechFly(gym.Env):
             # If fly is at least 30 mm away from any odor source
             if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) > 25:
                 sources_far_away += 1
-        # If fly is away from all sources
+        # If fly is away from all sources or if the time 
+        # in this sub-simulation has exceed a certain time-treshold
         if sources_far_away == len(self.arena.odor_source) or (self.curr_time > 10):
             return True
-    
+
         return False
 
     def get_info(self):
@@ -1859,7 +1865,6 @@ class NeuroMechFly(gym.Env):
     ) -> Tuple[ObsType, Dict[str, Any]]:
         """Respawn the fly in the initial position to start again exploring,
         the same fly_valence_dictionary is kept for the fly.
-        Reset the Gym environment.
 
         Parameters
         ----------
@@ -1887,14 +1892,8 @@ class NeuroMechFly(gym.Env):
             self._set_gravity(self.sim_params.gravity)
             if self.sim_params.align_camera_with_gravity:
                 self._camera_rot = np.eye(3)
-        #self.curr_time = 0
         self.elapsed_time = 0
         self._set_init_pose(self.init_pose)
-        #self._last_render_time = -np.inf
-        #self._last_vision_update_time = -np.inf
-        #self._curr_raw_visual_input = None
-        #self._curr_visual_input = None
-        #self._vision_update_mask = []
         self._flip_counter = 0
         return self.get_observation(), self.get_info()
 

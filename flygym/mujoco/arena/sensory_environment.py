@@ -1,5 +1,7 @@
 import numpy as np
 import random
+import logging
+from tqdm import trange
 from typing import Tuple, List, Optional, Callable, Dict
 from dm_control import mjcf
 
@@ -50,7 +52,7 @@ class OdorArena(BaseArena):
     Parameters
     ----------
     size : Tuple[float, float], optional
-        The size of the arena in mm, by default (50, 50).
+        The size of the arena in mm, by default (300, 300).
     friction : Tuple[float, float, float], optional
         The sliding, torsional, and rolling friction coefficients of the
         ground, by default (1, 0.005, 0.0001).
@@ -290,7 +292,7 @@ class OdorArena(BaseArena):
     def generate_random_gains(self, explore: bool = True):
         """Method to compute random numbers of opposite signed assigned
         to the attractive, aversive gains.
-        The range of gains is [0, 500]. The gain with the highest
+        The range of gains is [0, 500] and [0,200]. The gain with the highest
         absolute value has negative sign.
         If explore is true, the fly is free to explore around the arena,
         going both to attractive and aversive gains.
@@ -315,3 +317,87 @@ class OdorArena(BaseArena):
                 attractive_gain = min(x, y)
                 aversive_gain = -max(x, y)
         return attractive_gain, aversive_gain
+
+    def run_odor_taxis_simulation(
+        self,
+        sim,
+        num_decision_steps,
+        obs,
+        physics_steps_per_decision_step,
+        odor_history,
+        obs_hist,
+    ):
+        """The function that allows the fly to explore and learn 
+        by updating its internal table.
+        For its motion, the hybrid turning controller is used. 
+        First, the gains for the attractive and aversive sources are computed, 
+        then the turning bias is computed given the odor intesity 
+        at the current location.
+        The simulation keeps running until or a reward is found, 
+        or the simulation is truncated or is terminated
+        """
+        if len(self.valence_dictionary) != len(sim.fly_valence_dictionary):
+            attractive_gain, aversive_gain = self.generate_random_gains(True)
+        else:
+            attractive_gain, aversive_gain = self.generate_random_gains(False)
+        for _ in trange(num_decision_steps):
+            attractive_intensities = np.average(
+                obs["odor_intensity"][0, :].reshape(2, 2), axis=0, weights=[9, 1]
+            )
+            aversive_intensities = np.average(
+                obs["odor_intensity"][1, :].reshape(2, 2), axis=0, weights=[10, 0]
+            )
+            attractive_bias = (
+                attractive_gain
+                * (attractive_intensities[0] - attractive_intensities[1])
+                / attractive_intensities.mean()
+            )
+            aversive_bias = (
+                aversive_gain
+                * (aversive_intensities[0] - aversive_intensities[1])
+                / aversive_intensities.mean()
+            )
+            effective_bias = aversive_bias + attractive_bias
+            effective_bias_norm = np.tanh(effective_bias**2) * np.sign(effective_bias)
+            assert np.sign(effective_bias_norm) == np.sign(effective_bias)
+
+            control_signal = np.ones((2,))
+            side_to_modulate = int(effective_bias_norm > 0)
+            modulation_amount = np.abs(effective_bias_norm) * 0.8
+            control_signal[side_to_modulate] -= modulation_amount
+            for _ in range(physics_steps_per_decision_step):
+                obs, reward, terminated, truncated, _ = sim.step(control_signal)
+                rendered_img = sim.render()
+                if rendered_img is not None:
+                    # record odor intensity too for video
+                    odor_history.append(obs["odor_intensity"])
+                obs_hist.append(obs)
+
+                if reward != None:
+                    logging.info("A reward was found, let's start again exploring")
+                    _, _ = sim.respawn()
+                    logging.info("Elapsed time in the simulation", sim.curr_time)
+                    self.run_odor_taxis_simulation(
+                        sim,
+                        num_decision_steps,
+                        obs,
+                        physics_steps_per_decision_step,
+                        odor_history,
+                        obs_hist,
+                    )
+                if terminated:
+                    logging.info("Out of time")
+                    logging.info("Elapsed time in the simulation", sim.curr_time)
+                    break
+                if truncated:
+                    logging.info("A reward was not found, simulation is truncated")
+                    _, _ = sim.respawn()
+                    logging.info("Elapsed time in the simulation", sim.curr_time)
+                    self.run_odor_taxis_simulation(
+                        sim,
+                        num_decision_steps,
+                        obs,
+                        physics_steps_per_decision_step,
+                        odor_history,
+                        obs_hist,
+                    )
