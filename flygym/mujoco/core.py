@@ -1771,7 +1771,7 @@ class NeuroMechFly(gym.Env):
         # If fly is away from all sources
         if sources_far_away == len(self.arena.odor_source) or self.curr_time > 10:
             return True
-
+    
         return False
 
     def get_info(self):
@@ -1881,7 +1881,7 @@ class NeuroMechFly(gym.Env):
             This is an empty dictionary by default but the user can
             override this method to return additional information.
         """
-        super().reset()
+        super().reset(seed=seed)
         self.physics.reset()
         if np.any(self.physics.model.opt.gravity[:] - self.sim_params.gravity > 1e-3):
             self._set_gravity(self.sim_params.gravity)
@@ -1889,11 +1889,11 @@ class NeuroMechFly(gym.Env):
                 self._camera_rot = np.eye(3)
         self.curr_time = 0
         self._set_init_pose(self.init_pose)
-        # self._last_render_time = -np.inf
-        # self._last_vision_update_time = -np.inf
-        # self._curr_raw_visual_input = None
-        # self._curr_visual_input = None
-        # self._vision_update_mask = []
+        #self._last_render_time = -np.inf
+        #self._last_vision_update_time = -np.inf
+        #self._curr_raw_visual_input = None
+        #self._curr_visual_input = None
+        #self._vision_update_mask = []
         self._flip_counter = 0
         return self.get_observation(), self.get_info()
 
