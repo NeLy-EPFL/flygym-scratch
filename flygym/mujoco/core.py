@@ -155,6 +155,8 @@ class Parameters:
     actuator_kp: float = 30.0
     tarsus_stiffness: float = 2.2
     tarsus_damping: float = 0.05
+    antenna_stiffness: float = None
+    antenna_damping: float = None
     friction: float = (1.0, 0.005, 0.0001)
     gravity: Tuple[float, float, float] = (0.0, 0.0, -9.81e3)
     contact_solref: Tuple[float, float] = (2e-4, 1e3)
@@ -447,6 +449,7 @@ class NeuroMechFly(gym.Env):
         self._set_geoms_friction()
         self._set_joints_stiffness_and_damping()
         self._set_compliant_tarsus()
+        self._set_compliant_antennae()
 
         self._floor_height = self._get_max_floor_height(arena)
 
@@ -1040,6 +1043,19 @@ class NeuroMechFly(gym.Env):
                         "joint", f"joint_{side}{pos}Tarsus{tarsus_link}"
                     )
                     joint.stiffness = stiffness
+                    joint.damping = damping
+
+    def _set_compliant_antennae(self):
+        """Set the antenna joints to be compliant by setting the stiffness
+        and damping to a low value"""
+        stiffness = self.sim_params.antenna_stiffness
+        damping = self.sim_params.antenna_damping
+        for side in "LR":
+            for antenna_joint in ["Pedicel", "Arista", "Funiculus"]:
+                joint = self.model.find("joint", f"joint_{side}{antenna_joint}")
+                if stiffness is not None:
+                    joint.stiffness = stiffness
+                if damping is not None:
                     joint.damping = damping
 
     def _set_gravity(self, gravity: List[float], rot_mat: np.ndarray = None) -> None:
