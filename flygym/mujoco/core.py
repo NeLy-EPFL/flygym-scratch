@@ -157,6 +157,7 @@ class Parameters:
     tarsus_damping: float = 0.05
     antenna_stiffness: float = None
     antenna_damping: float = None
+    antenna_springdamper: Tuple[float, float] = None
     friction: float = (1.0, 0.005, 0.0001)
     gravity: Tuple[float, float, float] = (0.0, 0.0, -9.81e3)
     contact_solref: Tuple[float, float] = (2e-4, 1e3)
@@ -1055,6 +1056,7 @@ class NeuroMechFly(gym.Env):
         and damping to a low value"""
         stiffness = self.sim_params.antenna_stiffness
         damping = self.sim_params.antenna_damping
+        springdamper = self.sim_params.antenna_springdamper
         for side in "LR":
             for antenna_joint in ["Pedicel", "Arista", "Funiculus"]:
                 joint = self.model.find("joint", f"joint_{side}{antenna_joint}")
@@ -1062,6 +1064,8 @@ class NeuroMechFly(gym.Env):
                     joint.stiffness = stiffness
                 if damping is not None:
                     joint.damping = damping
+                if springdamper is not None:
+                    joint.springdamper = springdamper
 
     def _set_gravity(self, gravity: List[float], rot_mat: np.ndarray = None) -> None:
         """Set the gravity of the environment. Changing the gravity vector
