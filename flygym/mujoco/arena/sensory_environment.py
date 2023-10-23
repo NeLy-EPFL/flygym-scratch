@@ -144,7 +144,7 @@ class OdorArena(BaseArena):
             mode="fixed",
             pos=(self.odor_source[:, 0].max() / 2, 0, 35),
             euler=(0, 0, 0),
-            fovy=45,
+            fovy=90,
         )
         self.birdeye_cam_zoom = self.root_element.worldbody.add(
             "camera",
