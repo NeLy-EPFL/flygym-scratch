@@ -152,7 +152,7 @@ class Parameters:
     timestep: float = 0.0001
     joint_stiffness: float = 0.05
     joint_damping: float = 0.06
-    actuator_kp: float = 30.0
+    actuator_kp: Union[float, dict[str, float]] = 30.0
     tarsus_stiffness: float = 2.2
     tarsus_damping: float = 0.05
     antenna_stiffness: float = None
@@ -795,7 +795,12 @@ class NeuroMechFly(gym.Env):
 
     def _set_actuators_gain(self):
         for actuator in self._actuators:
-            actuator.kp = self.sim_params.actuator_kp
+            if isinstance(self.sim_params.actuator_kp, float):
+                actuator.kp = self.sim_params.actuator_kp
+            elif isinstance(self.sim_params.actuator_kp, dict):
+                actuator.kp = self.sim_params.actuator_kp[actuator.name]
+            else:
+                raise ValueError("Unsupported type of actuator kp")
 
     def _set_geoms_friction(self):
         for geom in self.model.find_all("geom"):
