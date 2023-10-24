@@ -158,7 +158,8 @@ class OdorArena(BaseArena):
         )
 
         # Add markers at the odor sources
-        # If no colors are given we will assign colors depending on the intensities of the peaks, which we will use to change the color
+        # If no colors are given we will assign colors depending on the intensities of the peaks,
+        # which we will use to change the color
         # Aversive : red, attractive : blue, neutral : green
         if marker_colors is None:
             marker_colors = []
@@ -334,7 +335,7 @@ class OdorArena(BaseArena):
         then the turning bias is computed given the odor intesity 
         at the current location.
         The simulation keeps running until or a reward is found, 
-        or the simulation is truncated or is terminated
+        or the simulation is truncated or terminated
         """
         if len(self.valence_dictionary) != len(sim.fly_valence_dictionary):
             attractive_gain, aversive_gain = self.generate_random_gains(True)
@@ -388,7 +389,7 @@ class OdorArena(BaseArena):
                 if terminated:
                     logging.info("Out of time")
                     logging.info("Elapsed time in the simulation", sim.curr_time)
-                    break
+                    return obs_hist
                 if truncated:
                     logging.info("A reward was not found, simulation is truncated")
                     _, _ = sim.respawn()

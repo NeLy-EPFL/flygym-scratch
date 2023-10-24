@@ -1724,7 +1724,8 @@ class NeuroMechFly(gym.Env):
         return obs
 
     def get_reward(self, obs):
-        """Get the reward for the current state of the environment"""
+        """Get the reward for the current state of the environment
+        once the fly is closed enough to the odor source"""
         for i in range(len(self.arena.odor_source)):
             # if fly is within 2mm of the attractive/aversive odor source
             if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) < 2:
@@ -1739,8 +1740,7 @@ class NeuroMechFly(gym.Env):
     def is_terminated(self):
         """Whether the episode has terminated due to factors that are
         defined within the Markov Decision Process (eg. task completion/
-        failure, etc). This method always returns False unless extended by
-        the user. In this case, the episode is terminated if the time elapsed 
+        failure, etc). In this case, the episode is terminated if the time elapsed 
         is bigger than the allowed time for the simulation
 
         Returns
@@ -1758,8 +1758,7 @@ class NeuroMechFly(gym.Env):
 
     def is_truncated(self, obs):
         """Whether the episode has terminated due to factors beyond the
-            Markov Decision Process (eg. time limit, etc). This method
-            always returns False unless extended by the user. In this scenario,
+            Markov Decision Process (eg. time limit, etc). In this scenario,
             it is truncated if the fly is too far away from any smell or 
             if the time of the current sub-simulation has exceed a certain trehsold
 
