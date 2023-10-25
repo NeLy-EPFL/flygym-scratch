@@ -8,6 +8,7 @@ from dm_control import mjcf
 from flygym.mujoco.util import load_config
 from .base import BaseArena
 
+logging.basicConfig(level=logging.INFO)
 
 class OdorArena(BaseArena):
     """Flat terrain with an odor source.
