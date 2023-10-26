@@ -16,19 +16,19 @@ setup(
         "License :: OSI Approved :: Apache Software License",
     ],
     install_requires=[
-        "gymnasium",
+        "gymnasium==0.29.1",
         "numpy",
         "scipy",
         "pyyaml",
         "jupyter",
         "mediapy",
-        "imageio",
+        "imageio==2.31.3",
         "imageio[pyav]",
         "imageio[ffmpeg]",
         "tqdm",
     ],
     extras_require={
-        "mujoco": ["mujoco", "dm_control", "numba", "opencv-python"],
+        "mujoco": ["mujoco>=2.3.0,<3.0.0", "dm_control", "numba", "opencv-python"],
         "pybullet": ["pybullet"],
         "dev": [
             "sphinx",
