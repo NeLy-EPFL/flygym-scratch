@@ -291,33 +291,128 @@ class OdorArena(BaseArena):
         key_value = key_value_array.flat[np.abs(key_value_array).argmax()]
         return key_value
 
-    def generate_random_gains(self, explore: bool = True):
+    def generate_random_gains(self, internal_state = "satiated", fly_pos = np.array([0, 0, 0])):
         """Method to compute random numbers of opposite signed assigned
         to the attractive, aversive gains.
         The range of gains is [0, 500] and [0,200]. The gain with the highest
         absolute value has negative sign.
-        If explore is true, the fly is free to explore around the arena,
-        going both to attractive and aversive gains.
-        Once the fly has explored everything, it will go to the source with the highest reward,
-        so we will set the highest gain for that type of source
+        The fly will have different behaviors depending on its internal state. If it is satiated, it will explore. If it is hungry, it will exploit and
+        go to the source with the highest reward. If it is starving, it will go to the closest source.
         """
         x = np.random.randint(500)
-        y = np.random.randint(200)
-        if explore:
-            sign = random.choice((-1, 1))
-            attractive_gain = sign * x
-            aversive_gain = -sign * y
-            if not (np.abs(attractive_gain) and np.sign(attractive_gain) < 0):
-                attractive_gain = -attractive_gain
-                aversive_gain = -aversive_gain
-        else:
-            max_key = max(self.valence_dictionary, key=self.valence_dictionary.get)
-            if max_key > 0:
-                attractive_gain = -max(x, y)
-                aversive_gain = min(x, y)
-            else:
-                attractive_gain = min(x, y)
-                aversive_gain = -max(x, y)
+        y = np.random.randint(500)
+
+        assert internal_state in ["satiated", "hungry", "starving"]
+
+        attractive_gain = 0
+        aversive_gain = 0
+
+        match internal_state:
+            # If the fly is satiated it can explore
+            ## TOCHANGE : implement random walk
+            case "satiated":
+                sign = random.choice((-1, 1))
+                attractive_gain = sign * x
+                aversive_gain = -sign * y
+                if not (np.abs(attractive_gain) and np.sign(attractive_gain) < 0):
+                    attractive_gain = -attractive_gain
+                    aversive_gain = -aversive_gain
+            # If fly is hungry it will exploit and go to food source with highest reward
+            case "hungry":
+                max_key = max(self.valence_dictionary, key=self.valence_dictionary.get)
+                print(self.valence_dictionary)
+                print(max_key)
+                if max_key > 0:
+                    attractive_gain = -max(x, y)
+                    aversive_gain = min(x, y)
+                else :
+                    attractive_gain = max(x, y)
+                    aversive_gain = -min(x, y)  
+            # If fly is starving it will go to closest food source 
+            case "starving":
+                # If first food source is closer
+                if np.linalg.norm(self.odor_source[0] - fly_pos) < np.linalg.norm(self.odor_source[1] - fly_pos):
+                    # If first food source is attractive
+                    if self.peak_odor_intensity[0][0] > self.peak_odor_intensity[0][1]:
+                        attractive_gain = x
+                        aversive_gain = -y
+                    # Else it's aversive
+                    else:
+                        attractive_gain = -x
+                        aversive_gain = y
+                # If second food source is closer
+                else:
+                    # If second food source is attractive
+                    if self.peak_odor_intensity[1][0] > self.peak_odor_intensity[1][1]:
+                        attractive_gain = x
+                        aversive_gain = -y
+                    # Else it's aversive
+                    else:
+                        attractive_gain = -x
+                        aversive_gain = y
+            ## TOCHANGE : make it so fly goes only to those it knows, and only if the valence is positive
+            # Pseudo-code :                    
+
+        return attractive_gain, aversive_gain
+    
+    def generate_random_gains2(self, internal_state = "satiated", fly_pos = np.array([0, 0, 0])):
+        """Method to compute random gains for the odor sources.
+        The range of gains is [0, 500]. 
+        The fly will have different behaviors depending on its internal state. If it is satiated, it will explore. If it is hungry, it will exploit and
+        go to the source with the highest reward. If it is starving, it will go to the closest source.
+        """
+        x = np.random.randint(500)
+        y = np.random.randint(500)
+
+        assert internal_state in ["satiated", "hungry", "starving"]
+
+        attractive_gain = 0
+        aversive_gain = 0
+
+        match internal_state:
+            # If the fly is satiated it can explore
+            ## TOCHANGE : implement random walk
+            case "satiated":
+                highest = np.argmax([x, y])
+                if highest == 0:
+                    attractive_gain = -max(x, y)
+                    aversive_gain = 0
+                else:
+                    attractive_gain = 0
+                    aversive_gain = -max(x, y)
+            # If fly is hungry it will exploit and go to food source with highest reward
+            case "hungry":
+                max_key = max(self.valence_dictionary, key=self.valence_dictionary.get)
+                if max_key > 0:
+                    attractive_gain = 0
+                    aversive_gain = -max(x, y)
+                else :
+                    attractive_gain = -max(x, y)
+                    aversive_gain = 0 
+            # If fly is starving it will go to closest food source 
+            case "starving":
+                # If first food source is closer
+                if np.linalg.norm(self.odor_source[0] - fly_pos) < np.linalg.norm(self.odor_source[1] - fly_pos):
+                    # If first food source is attractive
+                    if self.peak_odor_intensity[0][0] > self.peak_odor_intensity[0][1]:
+                        attractive_gain = -max(x, y)
+                        aversive_gain = 0
+                    # Else it's aversive
+                    else:
+                        attractive_gain = 0
+                        aversive_gain = -max(x, y)
+                # If second food source is closer
+                else:
+                    # If second food source is attractive
+                    if self.peak_odor_intensity[1][0] > self.peak_odor_intensity[1][1]:
+                        attractive_gain = -max(x, y)
+                        aversive_gain = 0
+                    # Else it's aversive
+                    else:
+                        attractive_gain = 0
+                        aversive_gain = -max(x, y)
+            ## TOCHANGE : make it so fly goes only to those it knows, and only if the valence is positive                  
+
         return attractive_gain, aversive_gain
 
     def run_odor_taxis_simulation(

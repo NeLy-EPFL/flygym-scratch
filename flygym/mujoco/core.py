@@ -262,8 +262,17 @@ class NeuroMechFly(gym.Env):
         The total time allowed for the simulation. By default it is equal
         to 5.
     elapsed_time : float
-        The total time since the fly has starting to explore in the 
-        current sub-simulation.
+        The total time since the fly has starting to explore in the current sub-simulation.
+    ##//
+    food_requirements : np.ndarray, size (2,)
+        The minimal amounts of stocked food at which the fly feels hungry or starved. By default it is [0.5, 0.1].
+    food_loss_rate : float
+        The rate at which the food is lost (per timestep). By default it is 0.000001.
+    food_stocked_init : float
+        The initial amount of food the fly has stored. By default it is 1.
+    food_stocked_curr : float
+        The current amount of food the fly has stored. It is initialized to food_stocked. This value decreases by food_loss_rate at each timestep.
+    ##//
     """
 
     _mujoco_config = util.load_config()
@@ -285,6 +294,11 @@ class NeuroMechFly(gym.Env):
         fly_valence_dictionary: Dict = {},
         simulation_time: float = 5,
         elapsed_time: float = 0,
+        ##//
+        food_requirements: np.ndarray = np.array([0.5, 0.1]),
+        food_loss_rate: float = 0.000001,
+        food_stocked_init: float = 1.0,
+        ##//
     ) -> None:
         """Initialize a NeuroMechFly environment.
 
@@ -345,8 +359,16 @@ class NeuroMechFly(gym.Env):
         elapsed_time : float
             The total time since the fly has starting to explore
             in the current sub-simulation.
-
+        ##//
+        food_requirements : np.ndarray, size (2,)
+            The minimal amounts of stocked food at which the fly feels hungry or starved. By default it is [0.5, 0.01].
+        food_loss_rate : float
+            The rate at which the food is lost (per timestep). By default it is 0.001.
+        food_stocked_init : float
+            The initial amount of food the fly has stored. By default it is 1.
+        ##//
         """
+
         if sim_params is None:
             sim_params = Parameters()
         if arena is None:
@@ -380,6 +402,12 @@ class NeuroMechFly(gym.Env):
 
         self.simulation_time = simulation_time
         self.elapsed_time = elapsed_time
+        ##//
+        self.food_requirements = food_requirements
+        self.food_loss_rate = food_loss_rate
+        self.food_stocked_init = food_stocked_init
+        self.food_stocked_curr = self.food_stocked_init
+        ##//
 
         if self.simulation_time <= 0:
             raise ValueError("Simulation time must be greater than zero.")
@@ -742,6 +770,10 @@ class NeuroMechFly(gym.Env):
             # x, y, z positions of the end effectors (tarsus-5 segments)
             "end_effectors": spaces.Box(low=-np.inf, high=np.inf, shape=(6, 3)),
             "fly_orientation": spaces.Box(low=-np.inf, high=np.inf, shape=(3,)),
+            ##//
+            # fly food satiation
+            "food_stocked": spaces.Box(low=0, high=np.inf, shape=(1,)),
+            ##//
         }
         if self.sim_params.enable_vision:
             _observation_space["vision"] = spaces.Box(
@@ -1247,6 +1279,9 @@ class NeuroMechFly(gym.Env):
         self._vision_update_mask = []
         self._flip_counter = 0
         self.fly_valence_dictionary = {}
+        ##//
+        self.food_stocked_curr = self.food_stocked_init
+        ##//
         return self.get_observation(), self.get_info()
 
     def step(
@@ -1290,6 +1325,13 @@ class NeuroMechFly(gym.Env):
         reward = self.get_reward(observation)
         terminated = self.is_terminated()
         truncated = self.is_truncated(observation)
+        ##//
+        self.food_stocked_curr -= self.food_loss_rate
+        if reward is not None:
+            print(f"Food stock before : {self.food_stocked_curr}")
+            self.food_stocked_curr += reward
+            print(f"Food stock after : {self.food_stocked_curr}")
+        ##//
         info = self.get_info()
 
         if self.detect_flip:
@@ -1341,6 +1383,8 @@ class NeuroMechFly(gym.Env):
 
             render_playspeed_text = self.sim_params.render_playspeed_text
             render_time_text = self.sim_params.render_timestamp_text
+
+            # Play speed and time
             if render_playspeed_text or render_time_text:
                 if render_playspeed_text and render_time_text:
                     text = (
@@ -1360,6 +1404,12 @@ class NeuroMechFly(gym.Env):
                     lineType=cv2.LINE_AA,
                     thickness=1,
                 )
+            ##//
+            # Internal state
+            internal_state = self.compute_internal_state()
+            text = f"Internal state: {internal_state}"
+            img = cv2.putText(img, text, org=(20, 60), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=0.8, color=(0, 0, 0), lineType=cv2.LINE_AA, thickness=1,)
+            ##// 
 
             self._frames.append(img)
             self._last_render_time = self.curr_time
@@ -1702,12 +1752,18 @@ class NeuroMechFly(gym.Env):
 
         orientation_vec = self.physics.bind(self._body_sensors[4]).sensordata.copy()
 
+        ##//
+        # food stocked
+        food_stocked = self.food_stocked_curr
+        ##//
+
         obs = {
             "joints": joint_obs.astype(np.float32),
             "fly": fly_pos.astype(np.float32),
             "contact_forces": contact_forces.astype(np.float32),
             "end_effectors": ee_pos.astype(np.float32),
             "fly_orientation": orientation_vec.astype(np.float32),
+            "food_stocked": food_stocked,
         }
 
         # olfaction
@@ -1894,8 +1950,22 @@ class NeuroMechFly(gym.Env):
         self.elapsed_time = 0
         self._set_init_pose(self.init_pose)
         self._flip_counter = 0
-        return self.get_observation(), self.get_info()
 
+        return self.get_observation(), self.get_info()
+    
+    ##//
+    def compute_internal_state(self):
+        """
+        Compute the internal state of the fly.
+        """
+        # Define fly internal state
+        if self.food_stocked_curr > self.food_requirements[0] :
+            return "satiated"
+        elif self.food_stocked_curr < self.food_requirements[1]:
+            return "starving"
+        else:
+            return "hungry"
+    ##//
 
 class MuJoCoParameters(Parameters):
     def __init__(self, *args, **kwargs):
