@@ -273,6 +273,8 @@ class NeuroMechFly(gym.Env):
     food_stocked_curr : float
         The current amount of food the fly has stored. It is initialized to food_stocked. This value decreases by food_loss_rate at each timestep.
     ##//
+    mating_state : string
+        The mating state of the fly (virgin/mated). This state determines what food sources the fly looks for
     """
 
     _mujoco_config = util.load_config()
@@ -298,6 +300,7 @@ class NeuroMechFly(gym.Env):
         food_requirements: np.ndarray = np.array([0.5, 0.1]),
         food_loss_rate: float = 0.000001,
         food_stocked_init: float = 1.0,
+        mating_state: str = "virgin", 
         ##//
     ) -> None:
         """Initialize a NeuroMechFly environment.
@@ -367,6 +370,8 @@ class NeuroMechFly(gym.Env):
         food_stocked_init : float
             The initial amount of food the fly has stored. By default it is 1.
         ##//
+        mating_state : string
+            The mating state of the fly (virgin/mated). This state determines what food sources the fly looks for
         """
 
         if sim_params is None:
@@ -407,6 +412,12 @@ class NeuroMechFly(gym.Env):
         self.food_loss_rate = food_loss_rate
         self.food_stocked_init = food_stocked_init
         self.food_stocked_curr = self.food_stocked_init
+
+        if (mating_state != "virgin") and (mating_state != "mated"):
+            logging.warning("Invalid mating state, mating state set to virgin")
+            self.mating_state = "virgin"
+        else: 
+            self.mating_state = mating_state
         ##//
 
         if self.simulation_time <= 0:
