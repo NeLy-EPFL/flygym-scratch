@@ -1988,9 +1988,9 @@ class NeuroMechFly(gym.Env):
 
     ##//
 
-    def compute_closest_source(self, obs) -> float:
+    def compute_closest_yeast_source(self, obs) -> float:
         """This function returns the index of the closest 
-        food source given the current position of the 
+        yeast source given the current position of the 
         fly in the simulation"""
         distance = np.inf
         index_source = 0
@@ -1999,8 +1999,9 @@ class NeuroMechFly(gym.Env):
                 obs["fly"][0, :2] - self.arena.odor_source[i, :2]
             )
             if tmp_distance < distance:
-                distance = tmp_distance
-                index_source = i
+                if self.arena.is_yeast(i):
+                    distance = tmp_distance
+                    index_source = i
         return index_source
 
 

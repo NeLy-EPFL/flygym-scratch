@@ -450,47 +450,19 @@ class OdorArena(BaseArena):
             ## TOCHANGE : implement random walk
             case "satiated":
                 if self.sim.mating_state == "virgin":
-                    highest = np.argmax([x, y])
-                    if highest == 0:
-                        attractive_gain = -max(x, y)
-                        aversive_gain = 0
-                    else:
-                        attractive_gain = 0
-                        aversive_gain = -max(x, y)
-
-            # If fly is hungry it will exploit and go to food source with highest reward
-            case "hungry":
-                max_key = max(self.valence_dictionary, key=self.valence_dictionary.get)
-                if max_key > 0:
                     attractive_gain = 0
                     aversive_gain = -max(x, y)
                 else:
                     attractive_gain = -max(x, y)
                     aversive_gain = 0
+            # If fly is hungry it will exploit and go to yeast source with highest reward
+            case "hungry":
+                attractive_gain = -max(x, y)
+                aversive_gain = 0
             # If fly is starving it will go to closest food source
             case "starving":
-                # If first food source is closer
-                if np.linalg.norm(self.odor_source[0] - fly_pos) < np.linalg.norm(
-                    self.odor_source[1] - fly_pos
-                ):
-                    # If first food source is attractive
-                    if self.peak_odor_intensity[0][0] > self.peak_odor_intensity[0][1]:
-                        attractive_gain = -max(x, y)
-                        aversive_gain = 0
-                    # Else it's aversive
-                    else:
-                        attractive_gain = 0
-                        aversive_gain = -max(x, y)
-                # If second food source is closer
-                else:
-                    # If second food source is attractive
-                    if self.peak_odor_intensity[1][0] > self.peak_odor_intensity[1][1]:
-                        attractive_gain = -max(x, y)
-                        aversive_gain = 0
-                    # Else it's aversive
-                    else:
-                        attractive_gain = 0
-                        aversive_gain = -max(x, y)
+                attractive_gain = -max(x, y)
+                aversive_gain = 0
             ## TOCHANGE : make it so fly goes only to those it knows, and only if the valence is positive
 
         return attractive_gain, aversive_gain
@@ -590,15 +562,51 @@ class OdorArena(BaseArena):
         else:
             return False
 
-    def compute_richest_source(self, is_yeast = True) -> float:
+    def compute_richest_yeast_source(self) -> float:
+        """This function find the reachest source of yeast
+        (the one that has the highest reward)"""
         arena_valence_dict = self.valence_dictionary
         found_key = True
-        while found_index:
+        while found_key:
             max_key = max(arena_valence_dict, key=arena_valence_dict.get)
-            if max_key<0 and is_yeast:
+            if max_key<0:
                 arena_valence_dict.pop(max_key)
+                print(arena_valence_dict)
             else: 
-                found_index = False
-        
-        return max_key
+                found_key = False
+        for el in range(len(self.peak_odor_intensity)):
+            if max_key == self.compute_smell_key_value(self.peak_odor_intensity[el]):
+                return el
 
+    def generate_turning_control(index_source, attractive_gain, aversive_gain, looking_for_yeast = True):
+    # Compute bias from odor intensity
+        odors = arena.odor_source(index_source)
+        odors = np.expand_dims(odors, axis=0)
+        attractive_intensities = np.average(
+            obs["odor_intensity"][0, :].reshape(2, 2), axis=0, weights=[9, 1]
+        )
+        aversive_intensities = np.average(
+            obs["odor_intensity"][1, :].reshape(2, 2), axis=0, weights=[10, 0]
+        )
+        attractive_bias = (
+            attractive_gain
+            * (attractive_intensities[0] - attractive_intensities[1])
+            / attractive_intensities.mean()
+        )
+        if looking_for_yeast:
+            aversive_bias = 0
+        else:
+            aversive_bias = (
+                aversive_gain
+                * (aversive_intensities[0] - aversive_intensities[1])
+                / aversive_intensities.mean()
+            )
+        effective_bias = aversive_bias + attractive_bias
+        effective_bias_norm = np.tanh(effective_bias**2) * np.sign(effective_bias)
+        assert np.sign(effective_bias_norm) == np.sign(effective_bias)
+
+        # Compute control signal
+        control_signal = np.ones((2,))
+        side_to_modulate = int(effective_bias_norm > 0)
+        modulation_amount = np.abs(effective_bias_norm) * 0.8
+        control_signal[side_to_modulate] -= modulation_amount
