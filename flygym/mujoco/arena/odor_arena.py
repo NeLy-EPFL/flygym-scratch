@@ -10,6 +10,7 @@ from .base import BaseArena
 
 logging.basicConfig(level=logging.INFO)
 
+
 class OdorsArena(BaseArena):
     """Flat terrain with an odor source.
 

@@ -300,7 +300,7 @@ class NeuroMechFly(gym.Env):
         food_requirements: np.ndarray = np.array([0.5, 0.1]),
         food_loss_rate: float = 0.000001,
         food_stocked_init: float = 1.0,
-        mating_state: str = "virgin", 
+        mating_state: str = "virgin",
         ##//
     ) -> None:
         """Initialize a NeuroMechFly environment.
@@ -416,7 +416,7 @@ class NeuroMechFly(gym.Env):
         if (mating_state != "virgin") and (mating_state != "mated"):
             logging.warning("Invalid mating state, mating state set to virgin")
             self.mating_state = "virgin"
-        else: 
+        else:
             self.mating_state = mating_state
         ##//
 
@@ -1419,8 +1419,17 @@ class NeuroMechFly(gym.Env):
             # Internal state
             internal_state = self.compute_internal_state()
             text = f"Internal state: {internal_state}"
-            img = cv2.putText(img, text, org=(20, 60), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=0.8, color=(0, 0, 0), lineType=cv2.LINE_AA, thickness=1,)
-            ##// 
+            img = cv2.putText(
+                img,
+                text,
+                org=(20, 60),
+                fontFace=cv2.FONT_HERSHEY_DUPLEX,
+                fontScale=0.8,
+                color=(0, 0, 0),
+                lineType=cv2.LINE_AA,
+                thickness=1,
+            )
+            ##//
 
             self._frames.append(img)
             self._last_render_time = self.curr_time
@@ -1807,7 +1816,7 @@ class NeuroMechFly(gym.Env):
     def is_terminated(self):
         """Whether the episode has terminated due to factors that are
         defined within the Markov Decision Process (eg. task completion/
-        failure, etc). In this case, the episode is terminated if the time elapsed 
+        failure, etc). In this case, the episode is terminated if the time elapsed
         is bigger than the allowed time for the simulation
 
         Returns
@@ -1826,7 +1835,7 @@ class NeuroMechFly(gym.Env):
     def is_truncated(self, obs):
         """Whether the episode has terminated due to factors beyond the
             Markov Decision Process (eg. time limit, etc). In this scenario,
-            it is truncated if the fly is too far away from any smell or 
+            it is truncated if the fly is too far away from any smell or
             if the time of the current sub-simulation has exceed a certain trehsold
 
         Returns
@@ -1839,7 +1848,7 @@ class NeuroMechFly(gym.Env):
             # If fly is at least 30 mm away from any odor source
             if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) > 25:
                 sources_far_away += 1
-        # If fly is away from all sources or if the time 
+        # If fly is away from all sources or if the time
         # in this sub-simulation has exceed a certain time-treshold
         if sources_far_away == len(self.arena.odor_source) or (self.curr_time > 10):
             return True
@@ -1963,20 +1972,37 @@ class NeuroMechFly(gym.Env):
         self._flip_counter = 0
 
         return self.get_observation(), self.get_info()
-    
+
     ##//
     def compute_internal_state(self):
         """
         Compute the internal state of the fly.
         """
         # Define fly internal state
-        if self.food_stocked_curr > self.food_requirements[0] :
+        if self.food_stocked_curr > self.food_requirements[0]:
             return "satiated"
         elif self.food_stocked_curr < self.food_requirements[1]:
             return "starving"
         else:
             return "hungry"
+
     ##//
+
+    def compute_closest_source(self, obs) -> float:
+        """This function returns the index of the closest 
+        food source given the current position of the 
+        fly in the simulation"""
+        distance = np.inf
+        index_source = 0
+        for i in range(len(self.arena.odor_source)):
+            tmp_distance = np.linalg.norm(
+                obs["fly"][0, :2] - self.arena.odor_source[i, :2]
+            )
+            if tmp_distance < distance:
+                distance = tmp_distance
+                index_source = i
+        return index_source
+
 
 class MuJoCoParameters(Parameters):
     def __init__(self, *args, **kwargs):
