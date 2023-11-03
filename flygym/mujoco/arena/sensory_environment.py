@@ -426,7 +426,7 @@ class OdorArena(BaseArena):
     
 
     def generate_random_gains_food_internal_state(
-        self, internal_state="satiated", fly_pos=np.array([0, 0, 0])
+        self, internal_state="satiated", mating_state="virgin", fly_pos=np.array([0, 0, 0])
     ):
         """Method to compute random gains for the odor sources.
         The range of gains is [0, 500].
@@ -449,7 +449,7 @@ class OdorArena(BaseArena):
             # If the fly is satiated it can explore
             ## TOCHANGE : implement random walk
             case "satiated":
-                if self.sim.mating_state == "virgin":
+                if mating_state == "virgin":
                     attractive_gain = 0
                     aversive_gain = -max(x, y)
                 else:

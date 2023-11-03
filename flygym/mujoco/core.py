@@ -1985,9 +1985,7 @@ class NeuroMechFly(gym.Env):
             return "starving"
         else:
             return "hungry"
-
-    ##//
-
+        
     def compute_closest_yeast_source(self, obs) -> float:
         """This function returns the index of the closest 
         yeast source given the current position of the 
