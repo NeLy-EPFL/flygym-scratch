@@ -1339,9 +1339,9 @@ class NeuroMechFly(gym.Env):
         ##//
         self.food_stocked_curr -= self.food_loss_rate
         if reward is not None:
-            print(f"Food stock before : {self.food_stocked_curr}")
+            logging.info(f"Food stock before : {self.food_stocked_curr}")
             self.food_stocked_curr += reward
-            print(f"Food stock after : {self.food_stocked_curr}")
+            logging.info(f"Food stock after : {self.food_stocked_curr}")
         ##//
         info = self.get_info()
 
@@ -1423,6 +1423,19 @@ class NeuroMechFly(gym.Env):
                 img,
                 text,
                 org=(20, 60),
+                fontFace=cv2.FONT_HERSHEY_DUPLEX,
+                fontScale=0.8,
+                color=(0, 0, 0),
+                lineType=cv2.LINE_AA,
+                thickness=1,
+            )
+            # Mating state
+            mating_state = self.mating_state
+            text = f"Mating state: {mating_state}"
+            img = cv2.putText(
+                img,
+                text,
+                org=(20, 80),
                 fontFace=cv2.FONT_HERSHEY_DUPLEX,
                 fontScale=0.8,
                 color=(0, 0, 0),
