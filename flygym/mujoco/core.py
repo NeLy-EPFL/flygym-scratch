@@ -1333,9 +1333,12 @@ class NeuroMechFly(gym.Env):
         self.curr_time += self.timestep
         self.elapsed_time += self.timestep
         observation = self.get_observation()
-        reward = self.get_reward(observation)
+        reward = 0
+        terminated = False
+        truncated = False
+        """reward = self.get_reward(observation)
         terminated = self.is_terminated()
-        truncated = self.is_truncated(observation)
+        truncated = self.is_truncated(observation)"""
         ##//
         self.food_stocked_curr -= self.food_loss_rate
         if reward is not None:
