@@ -676,3 +676,6 @@ class OdorArena(BaseArena):
         modulation_amount = np.abs(effective_bias_norm) * 0.8
         control_signal[side_to_modulate] -= modulation_amount
         return control_signal
+    
+    def get_odor_intensities(self):
+        return self.peak_odor_intensity
