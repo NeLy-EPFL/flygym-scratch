@@ -1363,7 +1363,7 @@ class NeuroMechFly(gym.Env):
 
         return observation, reward, terminated, truncated, info
 
-    def render(self) -> Union[np.ndarray, None]:
+    def render(self, plot_internal_state=False) -> Union[np.ndarray, None]:
         """Call the ``render`` method to update the renderer. It should be
         called every iteration; the method will decide by itself whether
         action is required.
@@ -1419,33 +1419,34 @@ class NeuroMechFly(gym.Env):
                     thickness=1,
                 )
             ##//
-            # Internal state
-            internal_state = self.compute_internal_state()
-            text = f"Internal state: {internal_state}"
-            img = cv2.putText(
-                img,
-                text,
-                org=(20, 60),
-                fontFace=cv2.FONT_HERSHEY_DUPLEX,
-                fontScale=0.8,
-                color=(0, 0, 0),
-                lineType=cv2.LINE_AA,
-                thickness=1,
-            )
-            # Mating state
-            mating_state = self.mating_state
-            text = f"Mating state: {mating_state}"
-            img = cv2.putText(
-                img,
-                text,
-                org=(20, 80),
-                fontFace=cv2.FONT_HERSHEY_DUPLEX,
-                fontScale=0.8,
-                color=(0, 0, 0),
-                lineType=cv2.LINE_AA,
-                thickness=1,
-            )
-            ##//
+            if plot_internal_state:
+                # Internal state
+                internal_state = self.compute_internal_state()
+                text = f"Internal state: {internal_state}"
+                img = cv2.putText(
+                    img,
+                    text,
+                    org=(20, 60),
+                    fontFace=cv2.FONT_HERSHEY_DUPLEX,
+                    fontScale=0.8,
+                    color=(0, 0, 0),
+                    lineType=cv2.LINE_AA,
+                    thickness=1,
+                )
+                # Mating state
+                mating_state = self.mating_state
+                text = f"Mating state: {mating_state}"
+                img = cv2.putText(
+                    img,
+                    text,
+                    org=(20, 80),
+                    fontFace=cv2.FONT_HERSHEY_DUPLEX,
+                    fontScale=0.8,
+                    color=(0, 0, 0),
+                    lineType=cv2.LINE_AA,
+                    thickness=1,
+                )
+                ##//
 
             self._frames.append(img)
             self._last_render_time = self.curr_time
@@ -2001,10 +2002,10 @@ class NeuroMechFly(gym.Env):
             return "starving"
         else:
             return "hungry"
-        
+
     def compute_closest_yeast_source(self, obs) -> float:
-        """This function returns the index of the closest 
-        yeast source given the current position of the 
+        """This function returns the index of the closest
+        yeast source given the current position of the
         fly in the simulation"""
         distance = np.inf
         index_source = 0

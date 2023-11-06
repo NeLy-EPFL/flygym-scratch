@@ -111,7 +111,7 @@ class OdorArena(BaseArena):
             "material",
             name="grid",
             texture=chequered,
-            texrepeat=(60, 60),
+            texrepeat=(30, 30),  # (60,60) for grid (300,300)
             reflectance=0.1,
         )
         self.root_element.worldbody.add(
@@ -423,10 +423,12 @@ class OdorArena(BaseArena):
             ## TOCHANGE : make it so fly goes only to those it knows, and only if the valence is positive
 
         return attractive_gain, aversive_gain
-    
 
     def generate_random_gains_food_internal_state(
-        self, internal_state="satiated", mating_state="virgin", fly_pos=np.array([0, 0, 0])
+        self,
+        internal_state="satiated",
+        mating_state="virgin",
+        fly_pos=np.array([0, 0, 0]),
     ):
         """Method to compute random gains for the odor sources.
         The range of gains is [0, 500].
@@ -553,7 +555,7 @@ class OdorArena(BaseArena):
                     )
 
     def is_yeast(self, source_index) -> bool:
-        """This function returns whether the food 
+        """This function returns whether the food
         source is yeast or sucrose"""
         if (
             self.peak_odor_intensity[source_index][0]
@@ -570,20 +572,19 @@ class OdorArena(BaseArena):
         found_key = True
         while found_key:
             max_key = max(arena_valence_dict, key=arena_valence_dict.get)
-            if max_key<0:
+            if max_key < 0:
                 arena_valence_dict.pop(max_key)
                 print(arena_valence_dict)
-            else: 
+            else:
                 found_key = False
         for el in range(len(self.peak_odor_intensity)):
             if max_key == self.compute_smell_key_value(self.peak_odor_intensity[el]):
                 return el
 
-
     def get_specific_olfaction(self, index_source, sim):
         """This function is needed when the fly wants
         to reach a specific yeast/sucrose source.
-        The odor_obs are computed as if in the arena 
+        The odor_obs are computed as if in the arena
         there was just the source the fly wants to reach"""
         odors = self.odor_source[index_source]
         odors = np.expand_dims(odors, axis=0)
@@ -602,23 +603,23 @@ class OdorArena(BaseArena):
         )
         _peak_intensity_repeated = _peak_intensity_repeated
         antennae_pos = sim.physics.bind(sim._antennae_sensors).sensordata
-        antennae_pos = antennae_pos.reshape(4,3)
+        antennae_pos = antennae_pos.reshape(4, 3)
         antennae_pos_repeated = antennae_pos[np.newaxis, np.newaxis, :, :]
         dist_3d = antennae_pos_repeated - _odor_source_repeated  # (n, k, w, 3)
         dist_euc = np.linalg.norm(dist_3d, axis=3)  # (n, k, w)
         scaling = self.diffuse_func(dist_euc)  # (n, k, w)
         intensity = _peak_intensity_repeated * scaling  # (n, k, w)
         return intensity.sum(axis=0)  # (k, w)
-    
+
     def generate_exploration_turning_control(self, attractive_gain, aversive_gain, obs):
         """This functions is used to computer
-        the control signal used to make the fly walk 
+        the control signal used to make the fly walk
         around the arena.
         The fly is here exploring freely both sucrose
         and yeast sources so in this case we do not
-        to set the aversive_bias (that guides 
+        to set the aversive_bias (that guides
         the fly towards the sucrose source) equal to zero."""
-    # Compute bias from odor intensity
+        # Compute bias from odor intensity
         attractive_intensities = np.average(
             obs["odor_intensity"][0, :].reshape(2, 2), axis=0, weights=[9, 1]
         )
@@ -648,12 +649,12 @@ class OdorArena(BaseArena):
 
     def generate_specific_turning_control(self, index_source, sim, attractive_gain):
         """This functions is used to computer
-        the control signal used to make the fly walk 
+        the control signal used to make the fly walk
         around the arena.
-        Compute bias from odor intensity knowing that 
-        the fly needs to approach a yeast source specified 
+        Compute bias from odor intensity knowing that
+        the fly needs to approach a yeast source specified
         by the index_source."""
-           
+
         obs = self.get_specific_olfaction(index_source, sim)
 
         attractive_intensities = np.average(
