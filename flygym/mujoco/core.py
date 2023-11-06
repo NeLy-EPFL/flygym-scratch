@@ -1307,6 +1307,8 @@ class NeuroMechFly(gym.Env):
         self._flip_counter = 0
         self.fly_valence_dictionary = {}
         self.food_stocked_curr = self.food_stocked_init
+        n_unique_odors = np.unique(self.arena.get_odor_intensities(), axis=0)
+        self.odor_scores = np.zeros(n_unique_odors.shape[0])
         return self.get_observation(), self.get_info()
 
     def step(
@@ -2041,10 +2043,10 @@ class NeuroMechFly(gym.Env):
             return np.random.choice(idxs)
         # If non of the scores are 0
         else:
-            inv_scores = 100 - scores
+            inv_scores = 101 - scores
             # Choose the index in a random manner according to the inverse scores
             sum_inv_scores = np.sum(inv_scores)
-            rand_int = np.random.randint(0, sum_inv_scores)
+            rand_int = np.random.randint(0, sum_inv_scores, dtype=np.int64())
             for i in range(len(inv_scores)):
                 if rand_int < np.sum(inv_scores[:i + 1]):
                     return i
@@ -2053,14 +2055,15 @@ class NeuroMechFly(gym.Env):
         """This function updates the odor scores table depending on 
         which odor source is reached, if any."""
         # Subtract the time loss from the scores
-        self.odor_scores - self.odor_score_time_loss
+        for el in self.odor_scores:
+            el =- 10
         # Add the reach addition to the score of the reached odor source
         if idx_odor_source != -1:
             self.odor_scores[idx_odor_source] += self.odor_score_reach_addition
         # If any of the scores are negative, set them to 0
         if np.any(self.odor_scores < 0):
             self.odor_scores[self.odor_scores < 0] = 0
-        # If any of the scores are above 100, set them to 100
+        # If any of the scores are above 50, set them to 50
         if np.any(self.odor_scores > 100):
             self.odor_scores[self.odor_scores > 100] = 100
 
