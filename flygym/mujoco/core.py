@@ -1312,7 +1312,7 @@ class NeuroMechFly(gym.Env):
         return self.get_observation(), self.get_info()
 
     def step(
-        self, action: ObsType
+        self, action: ObsType, truncation = True
     ) -> Tuple[ObsType, float, bool, bool, Dict[str, Any]]:
         """Step the Gym environment.
 
@@ -1349,12 +1349,9 @@ class NeuroMechFly(gym.Env):
         self.curr_time += self.timestep
         self.elapsed_time += self.timestep
         observation = self.get_observation()
-        reward = 0
-        terminated = False
-        truncated = False
-        """reward = self.get_reward(observation)
+        reward = self.get_reward(observation)
         terminated = self.is_terminated()
-        truncated = self.is_truncated(observation)"""
+        truncated = self.is_truncated(observation, truncation)
         self.food_stocked_curr -= self.food_loss_rate
         if reward is not None:
             logging.info(f"Food stock before : {self.food_stocked_curr}")
@@ -1859,7 +1856,7 @@ class NeuroMechFly(gym.Env):
             )
             return True
 
-    def is_truncated(self, obs):
+    def is_truncated(self, obs, truncation):
         """Whether the episode has terminated due to factors beyond the
             Markov Decision Process (eg. time limit, etc). In this scenario,
             it is truncated if the fly is too far away from any smell or
@@ -1877,8 +1874,9 @@ class NeuroMechFly(gym.Env):
                 sources_far_away += 1
         # If fly is away from all sources or if the time
         # in this sub-simulation has exceed a certain time-treshold
-        if sources_far_away == len(self.arena.odor_source) or (self.curr_time > 10):
-            return True
+        if truncation:
+            if sources_far_away == len(self.arena.odor_source) or (self.curr_time > 10):
+                return True
 
         return False
 
@@ -2056,7 +2054,7 @@ class NeuroMechFly(gym.Env):
         which odor source is reached, if any."""
         # Subtract the time loss from the scores
         for el in self.odor_scores:
-            el =- 10
+            el =- self.odor_score_time_loss
         # Add the reach addition to the score of the reached odor source
         if idx_odor_source != -1:
             self.odor_scores[idx_odor_source] += self.odor_score_reach_addition
@@ -2066,6 +2064,73 @@ class NeuroMechFly(gym.Env):
         # If any of the scores are above 50, set them to 50
         if np.any(self.odor_scores > 100):
             self.odor_scores[self.odor_scores > 100] = 100
+
+    def generate_random_walk(self, num_steps):
+        """Function needed to generate random walk"""
+        turnings = [np.array([1, 1])]
+        count_step_turn = 0
+        total_step_turn = 100
+        turn = False
+
+        for i in range(num_steps - 1):
+            if count_step_turn <= total_step_turn:
+                sigma_l = turnings[-1][0]
+                sigma_r = turnings[-1][1]
+
+            elif turn:
+                count_step_turn = 0
+                total_step_turn = np.random.gamma(120, 50)
+                turn = False
+                sigma_l = 1.2
+                sigma_r = 1.2
+
+            else:
+                count_step_turn = 0
+
+                while True:
+                    sigma_l = np.random.choice(
+                        [
+                            np.random.normal(1, 0.3),
+                            np.random.normal(1.25, 0.2),
+                            np.random.normal(0.15, 0.2),
+                        ],
+                        p=[0.5, 0.25, 0.25],
+                    )
+                    if sigma_l >= 0.0 and sigma_l <= 1.5:  # change before >= 0.1
+                        break
+
+                if sigma_l > 1.2:
+                    proba_r = np.array([0.1, 0.1, 0.8])
+                elif sigma_l > 0.2 and sigma_l < 0.4:
+                    proba_r = np.array([0.1, 0.8, 0.1])
+                elif sigma_l <= 0.2:
+                    proba_r = np.array([0.2, 0.8, 0.0])
+                else:
+                    proba_r = np.array([0.6, 0.2, 0.2])
+
+                while True:
+                    sigma_r = np.random.choice(
+                        [
+                            np.random.normal(1, 0.3),
+                            np.random.normal(1.25, 0.2),
+                            np.random.normal(0.15, 0.2),
+                        ],
+                        p=proba_r,
+                    )
+                    if sigma_r >= 0.05 and sigma_l <= 1.7:
+                        break
+
+                if np.abs(sigma_l - sigma_r) > 0.65:
+                    total_step_turn = np.random.gamma(140, 65)
+                    turn = True
+                else:
+                    total_step_turn = np.random.gamma(50, 30)
+
+            count_step_turn += 1
+
+            turnings.append(np.array([sigma_l, sigma_r]))
+
+        return turnings
 
 class MuJoCoParameters(Parameters):
     def __init__(self, *args, **kwargs):

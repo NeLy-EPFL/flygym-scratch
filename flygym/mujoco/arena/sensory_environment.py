@@ -647,7 +647,7 @@ class OdorArena(BaseArena):
         control_signal[side_to_modulate] -= modulation_amount
         return control_signal
 
-    def generate_specific_turning_control(self, index_source, sim, attractive_gain):
+    def generate_specific_turning_control(self, index_source, sim, attractive_gain=-500):
         """This functions is used to computer
         the control signal used to make the fly walk
         around the arena.
