@@ -266,11 +266,11 @@ class NeuroMechFly(gym.Env):
     food_requirements : np.ndarray, size (2,)
         The minimal amounts of stocked food at which the fly feels hungry or starved. By default it is [0.5, 0.1].
     food_loss_rate : float
-        The rate at which the food is lost (per timestep). By default it is 0.000001.
+        The rate at which the food (AAs) is lost (per timestep). By default it is 0.000001.
     food_stocked_init : float
-        The initial amount of food the fly has stored. By default it is 1.
+        The initial amount of food (AAs) the fly has stored. By default it is 1.
     food_stocked_curr : float
-        The current amount of food the fly has stored. It is initialized to food_stocked. This value decreases by food_loss_rate at each timestep.
+        The current amount of food (AAs) the fly has stored. It is initialized to food_stocked. This value decreases by food_loss_rate at each timestep.
     mating_state : string
         The mating state of the fly (virgin/mated). This state determines what food sources the fly looks for
     odor_score_reach_addition : float
@@ -368,12 +368,12 @@ class NeuroMechFly(gym.Env):
             The total time since the fly has starting to explore
             in the current sub-simulation.
         food_requirements : np.ndarray, size (2,)
-            The minimal amounts of stocked food at which the fly feels hungry or starved. 
+            The minimal amounts of stocked food (AAs) at which the fly feels hungry or starved. 
             By default it is [0.5, 0.01].
         food_loss_rate : float
-            The rate at which the food is lost (per timestep). By default it is 0.001.
+            The rate at which the food (AAs) is lost (per timestep). By default it is 0.001.
         food_stocked_init : float
-            The initial amount of food the fly has stored. By default it is 1.
+            The initial amount of food (AAs) the fly has stored. By default it is 1.
         mating_state : string
             The mating state of the fly (virgin/mated). This state determines what food sources 
             the fly looks for.
@@ -415,6 +415,7 @@ class NeuroMechFly(gym.Env):
         self._last_tarsalseg_names = [
             f"{side}{pos}Tarsus5" for side in "LR" for pos in "FMH"
         ]
+
         if len(fly_valence_dictionary) == 0:
             self.fly_valence_dictionary = {}
         else:
@@ -1320,6 +1321,8 @@ class NeuroMechFly(gym.Env):
         ----------
         action : ObsType
             Action dictionary as defined by the environment's action space.
+        truncation : bool
+            This boolean value is used to decide whether we want to truncate the simulatio if certain conditions are satisfied
 
         Returns
         -------
@@ -1841,7 +1844,7 @@ class NeuroMechFly(gym.Env):
         """Whether the episode has terminated due to factors that are
         defined within the Markov Decision Process (eg. task completion/
         failure, etc). In this case, the episode is terminated if the time elapsed
-        is bigger than the allowed time for the simulation
+        is bigger than the allowed time for the entire simulation.
 
         Returns
         -------
@@ -1860,7 +1863,7 @@ class NeuroMechFly(gym.Env):
         """Whether the episode has terminated due to factors beyond the
             Markov Decision Process (eg. time limit, etc). In this scenario,
             it is truncated if the fly is too far away from any smell or
-            if the time of the current sub-simulation has exceed a certain trehsold
+            if the time of the current sub-simulation has exceed a certain trehsold.
 
         Returns
         -------
@@ -1964,7 +1967,7 @@ class NeuroMechFly(gym.Env):
         self, *, seed: Optional[int] = None, options: Optional[Dict] = None
     ) -> Tuple[ObsType, Dict[str, Any]]:
         """Respawn the fly in the initial position to start again exploring,
-        the same fly_valence_dictionary is kept for the fly.
+        the same fly_valence_dictionary is kept for the fly, while the elapsed_time for the sub-simulation is set to zero.
 
         Parameters
         ----------
@@ -2000,7 +2003,8 @@ class NeuroMechFly(gym.Env):
 
     def compute_internal_state(self):
         """
-        Compute the internal state of the fly.
+        Compute the internal state of the fly
+        given the AAs' levels.
         """
         # Define fly internal state
         if self.food_stocked_curr > self.food_requirements[0]:
