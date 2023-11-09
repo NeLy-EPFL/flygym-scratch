@@ -192,7 +192,7 @@ olfaction:
 flip_detection:
   ignore_period: 0.1  # in the first N seconds (initialization period), ignore flips
   min_flip_duration: 0.05  # ignore possible flips shorter than this
-  flip_threshold: 0.05
+  #flip_threshold: 0.05
 
 paths:
   mjcf_model: mjcf/groundwalking_nmf_mjcf_nofloor_230518__bendTarsus_scaled.xml
