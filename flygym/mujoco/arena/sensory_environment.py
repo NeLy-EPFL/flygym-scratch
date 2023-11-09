@@ -315,7 +315,6 @@ class OdorArena(BaseArena):
             else: 
                 attractive_gain = x
                 aversive_gain = -y
-            return attractive_gain, aversive_gain
         else:
             # the fly will fo to the source with highest reward
             max_key = max(self.valence_dictionary, key=self.valence_dictionary.get)
@@ -325,6 +324,7 @@ class OdorArena(BaseArena):
             else:
                 attractive_gain = -max(x, y)
                 aversive_gain = 0
+        return attractive_gain, aversive_gain
             
     
 
