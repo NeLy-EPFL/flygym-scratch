@@ -222,7 +222,7 @@ class OdorArena(BaseArena):
                 "geom", type="capsule", size=(marker_size, marker_size), rgba=rgba
             )
 
-        # Compute the key for each smell and update the dictionary
+        # Compute the key for each smell and update the internal valence dictionary
         for i in range(self.num_odor_sources):
             smell_key_value = self.compute_smell_key_value(self.peak_odor_intensity[i])
             self.valence_dictionary.update({smell_key_value: self.odor_valence[i]})
@@ -294,11 +294,9 @@ class OdorArena(BaseArena):
 
     def generate_random_gains(self, explore=True):
         """Method to compute random numbers of opposite signed assigned
-        to the attractive, aversive gains.
-        The range of gains is [0, 500] and [0,500]. The gain with the highest
+        for the attractive/aversive gain for basic odor taxis.
+        The range of gains is [0, 500] and [0,300]. The gain with the highest
         absolute value has negative sign.
-        The fly will have different behaviors depending on its internal state. If it is satiated, it will explore. If it is hungry, it will exploit and
-        go to the source with the highest reward. If it is starving, it will go to the closest source.
         """
 
         attractive_gain = 0
@@ -329,8 +327,11 @@ class OdorArena(BaseArena):
     ):
         """Method to compute random gains for the odor sources.
         The range of gains is [0, 500].
-        The fly will have different behaviors depending on its internal state. If it is satiated, it will explore. If it is hungry, it will exploit and
-        go to the source with the highest reward. If it is starving, it will go to the closest source.
+        The fly will have different behaviors depending on its internal state.
+        If it is satiated, it will explore.
+        If it is hungry, it will exploit and
+        go to the source with the highest reward.
+        If it is starving, it will go to the closest source.
         """
         x = np.random.randint(500)
         y = np.random.randint(500)
@@ -342,7 +343,6 @@ class OdorArena(BaseArena):
 
         match internal_state:
             # If the fly is satiated it can explore
-            ## TOCHANGE : implement random walk
             case "satiated":
                 highest = np.argmax([x, y])
                 if highest == 0:
@@ -384,7 +384,6 @@ class OdorArena(BaseArena):
                     else:
                         attractive_gain = 0
                         aversive_gain = -max(x, y)
-            ## TOCHANGE : make it so fly goes only to those it knows, and only if the valence is positive
 
         return attractive_gain, aversive_gain
 
@@ -414,7 +413,6 @@ class OdorArena(BaseArena):
 
         match internal_state:
             # If the fly is satiated it can explore
-            ## TOCHANGE : implement random walk
             case "satiated":
                 if mating_state == "virgin":
                     attractive_gain = 0
@@ -430,7 +428,6 @@ class OdorArena(BaseArena):
             case "starving":
                 attractive_gain = -max(x, y)
                 aversive_gain = 0
-            ## TOCHANGE : make it so fly goes only to those it knows, and only if the valence is positive
 
         return attractive_gain, aversive_gain
 
@@ -457,30 +454,9 @@ class OdorArena(BaseArena):
         else:
             attractive_gain, aversive_gain = self.generate_random_gains(False)
         for _ in trange(num_decision_steps):
-            attractive_intensities = np.average(
-                obs["odor_intensity"][0, :].reshape(2, 2), axis=0, weights=[9, 1]
+            control_signal = self.generate_exploration_turning_control(
+                attractive_gain, aversive_gain, obs
             )
-            aversive_intensities = np.average(
-                obs["odor_intensity"][1, :].reshape(2, 2), axis=0, weights=[10, 0]
-            )
-            attractive_bias = (
-                attractive_gain
-                * (attractive_intensities[0] - attractive_intensities[1])
-                / attractive_intensities.mean()
-            )
-            aversive_bias = (
-                aversive_gain
-                * (aversive_intensities[0] - aversive_intensities[1])
-                / aversive_intensities.mean()
-            )
-            effective_bias = aversive_bias + attractive_bias
-            effective_bias_norm = np.tanh(effective_bias**2) * np.sign(effective_bias)
-            assert np.sign(effective_bias_norm) == np.sign(effective_bias)
-
-            control_signal = np.ones((2,))
-            side_to_modulate = int(effective_bias_norm > 0)
-            modulation_amount = np.abs(effective_bias_norm) * 0.8
-            control_signal[side_to_modulate] -= modulation_amount
             for _ in range(physics_steps_per_decision_step):
                 obs, reward, terminated, truncated, _ = sim.step(control_signal)
                 rendered_img = sim.render()
@@ -547,7 +523,7 @@ class OdorArena(BaseArena):
 
     def get_specific_olfaction(self, index_source, sim):
         """This function is needed when the fly wants
-        to reach a specific yeast/sucrose source.
+        to reach a specific source.
         The odor_obs are computed as if in the arena
         there was just the source the fly wants to reach"""
         odors = self.odor_source[index_source]
@@ -580,9 +556,7 @@ class OdorArena(BaseArena):
         the control signal used to make the fly walk
         around the arena.
         The fly is here exploring freely both sucrose
-        and yeast sources so in this case we do not
-        to set the aversive_bias (that guides
-        the fly towards the sucrose source) equal to zero."""
+        and yeast/attractive and aversive sources."""
         # Compute bias from odor intensity
         attractive_intensities = np.average(
             obs["odor_intensity"][0, :].reshape(2, 2), axis=0, weights=[9, 1]
@@ -614,11 +588,11 @@ class OdorArena(BaseArena):
     def generate_specific_turning_control(
         self, index_source, sim, attractive_gain=-500
     ):
-        """This functions is used to computer
+        """This functions is used to compute
         the control signal used to make the fly walk
         around the arena.
-        Compute bias from odor intensity knowing that
-        the fly needs to approach a yeast source specified
+        It computed the bias from the odor intensity knowing that
+        the fly needs to approach a (yeast) source specified
         by the index_source."""
 
         obs = self.get_specific_olfaction(index_source, sim)
@@ -644,4 +618,6 @@ class OdorArena(BaseArena):
         return control_signal
 
     def get_odor_intensities(self):
+        """This function returns the odor
+        intensity of the arena"""
         return self.peak_odor_intensity
