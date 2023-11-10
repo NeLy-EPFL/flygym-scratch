@@ -292,9 +292,7 @@ class OdorArena(BaseArena):
         key_value = key_value_array.flat[np.abs(key_value_array).argmax()]
         return key_value
 
-    def generate_random_gains(
-        self, explore = True
-    ):
+    def generate_random_gains(self, explore=True):
         """Method to compute random numbers of opposite signed assigned
         to the attractive, aversive gains.
         The range of gains is [0, 500] and [0,500]. The gain with the highest
@@ -309,10 +307,10 @@ class OdorArena(BaseArena):
         x = np.random.randint(500)
         y = np.random.randint(300)
         if explore:
-            if x>y:
+            if x > y:
                 attractive_gain = -x
                 aversive_gain = y
-            else: 
+            else:
                 attractive_gain = x
                 aversive_gain = -y
         else:
@@ -325,8 +323,6 @@ class OdorArena(BaseArena):
                 attractive_gain = -max(x, y)
                 aversive_gain = 0
         return attractive_gain, aversive_gain
-            
-    
 
     def generate_random_gains_food(
         self, internal_state="satiated", fly_pos=np.array([0, 0, 0])
@@ -615,7 +611,9 @@ class OdorArena(BaseArena):
         control_signal[side_to_modulate] -= modulation_amount
         return control_signal
 
-    def generate_specific_turning_control(self, index_source, sim, attractive_gain=-500):
+    def generate_specific_turning_control(
+        self, index_source, sim, attractive_gain=-500
+    ):
         """This functions is used to computer
         the control signal used to make the fly walk
         around the arena.
@@ -644,6 +642,6 @@ class OdorArena(BaseArena):
         modulation_amount = np.abs(effective_bias_norm) * 0.8
         control_signal[side_to_modulate] -= modulation_amount
         return control_signal
-    
+
     def get_odor_intensities(self):
         return self.peak_odor_intensity

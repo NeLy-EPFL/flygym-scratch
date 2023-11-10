@@ -278,7 +278,7 @@ class NeuroMechFly(gym.Env):
         It corresponds to the fly's cerntainty that the odor source it followed corresponds to the
         reached food source. By default it is 15.
     odor_score_time_loss : float
-        The score amount lost at each iteration of the exploration process. It corresponds to the 
+        The score amount lost at each iteration of the exploration process. It corresponds to the
         fact that over time the fly gets less and less certain of the mappings. By default it is 1.
     """
 
@@ -306,7 +306,7 @@ class NeuroMechFly(gym.Env):
         food_stocked_init: float = 1.0,
         mating_state: str = "virgin",
         odor_score_reach_addition: float = 15.0,
-        odor_score_time_loss: float = 1.0
+        odor_score_time_loss: float = 1.0,
     ) -> None:
         """Initialize a NeuroMechFly environment.
 
@@ -368,14 +368,14 @@ class NeuroMechFly(gym.Env):
             The total time since the fly has starting to explore
             in the current sub-simulation.
         food_requirements : np.ndarray, size (2,)
-            The minimal amounts of stocked food (AAs) at which the fly feels hungry or starved. 
+            The minimal amounts of stocked food (AAs) at which the fly feels hungry or starved.
             By default it is [0.5, 0.01].
         food_loss_rate : float
             The rate at which the food (AAs) is lost (per timestep). By default it is 0.001.
         food_stocked_init : float
             The initial amount of food (AAs) the fly has stored. By default it is 1.
         mating_state : string
-            The mating state of the fly (virgin/mated). This state determines what food sources 
+            The mating state of the fly (virgin/mated). This state determines what food sources
             the fly looks for.
         odor_scores : np.ndarray, size (n_unique_odors,)
             The table recording the score associated to each individual different food odor. Scores
@@ -385,7 +385,7 @@ class NeuroMechFly(gym.Env):
             It corresponds to the fly's cerntainty that the odor source it followed corresponds to the
             reached food source. By default it is 15.
         odor_score_time_loss : float
-            The score amount lost at each iteration of the exploration process. It corresponds to the 
+            The score amount lost at each iteration of the exploration process. It corresponds to the
             fact that over time the fly gets less and less certain of the mappings. By default it is 1.
         """
 
@@ -1313,7 +1313,7 @@ class NeuroMechFly(gym.Env):
         return self.get_observation(), self.get_info()
 
     def step(
-        self, action: ObsType, truncation = True
+        self, action: ObsType, truncation=True
     ) -> Tuple[ObsType, float, bool, bool, Dict[str, Any]]:
         """Step the Gym environment.
 
@@ -2029,14 +2029,14 @@ class NeuroMechFly(gym.Env):
                     distance = tmp_distance
                     index_source = i
         return index_source
-    
+
     def choose_odor_exploration(self):
-        """This function acts as the decision module during exploration to see which 
-        odor the fly will explore. It returns the index of the odor that the fly will 
+        """This function acts as the decision module during exploration to see which
+        odor the fly will explore. It returns the index of the odor that the fly will
         explore according to the food scores table. It should be called only either
         at the start of the exploration or after reaching one of the odor sources.
-        If any of the scores are 0, then the fly will explore one of the odors that has 
-        such a score. If none are 0, then the fly will explore the odors with 
+        If any of the scores are 0, then the fly will explore one of the odors that has
+        such a score. If none are 0, then the fly will explore the odors with
         probabilities depending on their associated scores."""
         scores = self.odor_scores
         # If any of the scores are 0, choose a random index where the score is 0
@@ -2050,15 +2050,15 @@ class NeuroMechFly(gym.Env):
             sum_inv_scores = np.sum(inv_scores)
             rand_int = np.random.randint(0, sum_inv_scores, dtype=np.int64())
             for i in range(len(inv_scores)):
-                if rand_int < np.sum(inv_scores[:i + 1]):
+                if rand_int < np.sum(inv_scores[: i + 1]):
                     return i
-                
+
     def update_odor_scores(self, idx_odor_source=-1):
-        """This function updates the odor scores table depending on 
+        """This function updates the odor scores table depending on
         which odor source is reached, if any."""
         # Subtract the time loss from the scores
         for el in self.odor_scores:
-            el =- self.odor_score_time_loss
+            el = -self.odor_score_time_loss
         # Add the reach addition to the score of the reached odor source
         if idx_odor_source != -1:
             self.odor_scores[idx_odor_source] += self.odor_score_reach_addition
@@ -2135,6 +2135,7 @@ class NeuroMechFly(gym.Env):
             turnings.append(np.array([sigma_l, sigma_r]))
 
         return turnings
+
 
 class MuJoCoParameters(Parameters):
     def __init__(self, *args, **kwargs):
