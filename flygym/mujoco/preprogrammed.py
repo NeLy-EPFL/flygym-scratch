@@ -96,10 +96,10 @@ def get_collision_geometries(config: str = "all") -> List[str]:
         return [
             f"{side}{dof}_collision"
             for side in "LR"
-            for dof in [
-            "Pedicel", "Funiculus", "Arista"
-            ]
+            for dof in ["Pedicel", "Funiculus", "Arista"]
         ]
+    elif config == "head":
+        return ["Head_collision"]
     elif config == "none":
         return []
     else:
