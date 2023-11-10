@@ -1322,7 +1322,8 @@ class NeuroMechFly(gym.Env):
         action : ObsType
             Action dictionary as defined by the environment's action space.
         truncation : bool
-            This boolean value is used to decide whether we want to truncate the simulatio if certain conditions are satisfied
+            This boolean value is used to decide whether we want to truncate 
+            the simulatio if certain conditions are satisfied
 
         Returns
         -------
@@ -1382,6 +1383,12 @@ class NeuroMechFly(gym.Env):
         called every iteration; the method will decide by itself whether
         action is required.
 
+        Parameters
+        ----------
+        plot_internal_state : bool
+        This parameters decide if we want to plot as well
+        the internal state of the fly (mating state, food stocks (AAs) level)
+
         Returns
         -------
         np.ndarray
@@ -1432,6 +1439,9 @@ class NeuroMechFly(gym.Env):
                     lineType=cv2.LINE_AA,
                     thickness=1,
                 )
+            # If plot_internal_state is True,
+            # we plot the mating state and the 
+            # food stock levels
             if plot_internal_state:
                 # Internal state
                 internal_state = self.compute_internal_state()
@@ -1827,8 +1837,21 @@ class NeuroMechFly(gym.Env):
         return obs
 
     def get_reward(self, obs):
-        """Get the reward for the current state of the environment
-        once the fly is closed enough to the odor source"""
+        """
+        Get the reward for the current state of the environment
+        once the fly is closed enough to the odor source
+
+        Parameters
+        ----------
+        obs: ObsType
+        The observation as defined by the environment.
+
+        Returns
+        -------
+        reward"""
+
+        
+
         for i in range(len(self.arena.odor_source)):
             # if fly is within 2mm of the attractive/aversive odor source
             if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) < 2:
@@ -1864,6 +1887,12 @@ class NeuroMechFly(gym.Env):
             Markov Decision Process (eg. time limit, etc). In this scenario,
             it is truncated if the fly is too far away from any smell or
             if the time of the current sub-simulation has exceed a certain trehsold.
+        Parameters
+        ----------
+        obs: ObsType
+        The observation as defined by the environment.
+        truncation: bool
+        Whether we allow the simulation to be truncated if certain conditions are met.
 
         Returns
         -------
@@ -1997,7 +2026,6 @@ class NeuroMechFly(gym.Env):
                 self._camera_rot = np.eye(3)
         self.elapsed_time = 0
         self._set_init_pose(self.init_pose)
-        self._flip_counter = 0
 
         return self.get_observation(), self.get_info()
 
@@ -2017,7 +2045,15 @@ class NeuroMechFly(gym.Env):
     def compute_closest_yeast_source(self, obs) -> float:
         """This function returns the index of the closest
         yeast source given the current position of the
-        fly in the simulation"""
+        fly in the simulation
+        Parameters
+        ----------
+        obs: ObsType
+        The observation as defined by the environment.
+        
+        Returns
+        -------
+        float: the index of the closest yeast source"""
         distance = np.inf
         index_source = 0
         for i in range(len(self.arena.odor_source)):
@@ -2030,7 +2066,7 @@ class NeuroMechFly(gym.Env):
                     index_source = i
         return index_source
 
-    def choose_odor_exploration(self):
+    def choose_odor_exploration(self) -> float:
         """This function acts as the decision module during exploration to see which
         odor the fly will explore. It returns the index of the odor that the fly will
         explore according to the food scores table. It should be called only either
@@ -2054,7 +2090,13 @@ class NeuroMechFly(gym.Env):
                     return i
 
     def update_odor_scores(self, idx_odor_source=-1):
-        """This function updates the odor scores table depending on
+        """
+        Parameters
+        ----------
+        idx_odor_source: float
+        The index of the source that has been reached.
+
+        This function updates the odor scores table depending on
         which odor source is reached, if any."""
         # Subtract the time loss from the scores
         for el in self.odor_scores:
@@ -2070,7 +2112,18 @@ class NeuroMechFly(gym.Env):
             self.odor_scores[self.odor_scores > 100] = 100
 
     def generate_random_walk(self, num_steps):
-        """Function needed to generate random walk"""
+        """Function needed to generate random walk
+    
+        Parameters
+        ----------
+        num_steps: float
+        The number of steps.
+        
+        Returns
+        -------
+        Turnings: array
+        Array with the control_signal needed to guide the fly
+        """
         turnings = [np.array([1, 1])]
         count_step_turn = 0
         total_step_turn = 100
@@ -2135,6 +2188,14 @@ class NeuroMechFly(gym.Env):
             turnings.append(np.array([sigma_l, sigma_r]))
 
         return turnings
+
+    def all_sources_explored(self) -> bool:
+        """This function checks if the fly has been able
+        to explore all the different sources around the arena"""
+        if len(self.fly_valence_dictionary) == len(self.arena.valence_dictionary):
+            return True 
+        else:
+            return False   
 
 
 class MuJoCoParameters(Parameters):

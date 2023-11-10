@@ -430,6 +430,23 @@ class OdorArena(BaseArena):
                 aversive_gain = 0
 
         return attractive_gain, aversive_gain
+    
+    def generate_curiosity_rdm_gains_food_internal_state(
+        self
+    ):
+        """Method to compute random gains for the odor sources.
+        The range of gains is [0, 500].
+        In this case, all sources are attractive, we therefore
+        generate a negative attractive gains with a big absolute value,
+        the aversive gain is set to 0 to let the fly walks faster to the chosen source.
+        """
+        x = np.random.randint(500)
+        y = np.random.randint(500)
+
+        attractive_gain = -max(x, y)
+        aversive_gain = 0 #min(x,y)
+
+        return attractive_gain, aversive_gain
 
     def run_odor_taxis_simulation(
         self,
@@ -493,6 +510,7 @@ class OdorArena(BaseArena):
                         odor_history,
                         obs_hist,
                     )
+                    return obs_hist
 
     def is_yeast(self, source_index) -> bool:
         """This function returns whether the food
