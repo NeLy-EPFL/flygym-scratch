@@ -1322,8 +1322,8 @@ class NeuroMechFly(gym.Env):
         action : ObsType
             Action dictionary as defined by the environment's action space.
         truncation : bool
-            This boolean value is used to decide whether we want to truncate 
-            the simulatio if certain conditions are satisfied
+            This boolean value is used to decide whether we want to truncate
+            the simulatio if certain time conditions are satisfied
 
         Returns
         -------
@@ -1440,7 +1440,7 @@ class NeuroMechFly(gym.Env):
                     thickness=1,
                 )
             # If plot_internal_state is True,
-            # we plot the mating state and the 
+            # we plot the mating state and the
             # food stock levels
             if plot_internal_state:
                 # Internal state
@@ -1844,13 +1844,11 @@ class NeuroMechFly(gym.Env):
         Parameters
         ----------
         obs: ObsType
-        The observation as defined by the environment.
+            The observation as defined by the environment.
 
         Returns
         -------
         reward"""
-
-        
 
         for i in range(len(self.arena.odor_source)):
             # if fly is within 2mm of the attractive/aversive odor source
@@ -1890,9 +1888,11 @@ class NeuroMechFly(gym.Env):
         Parameters
         ----------
         obs: ObsType
-        The observation as defined by the environment.
+            The observation as defined by the environment.
+
         truncation: bool
-        Whether we allow the simulation to be truncated if certain conditions are met.
+            Whether we allow the simulation to be truncated if certain time
+        conditions are met.
 
         Returns
         -------
@@ -1904,11 +1904,14 @@ class NeuroMechFly(gym.Env):
             # If fly is at least 30 mm away from any odor source
             if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) > 25:
                 sources_far_away += 1
-        # If fly is away from all sources or if the time
-        # in this sub-simulation has exceed a certain time-treshold
         if truncation:
-            if sources_far_away == len(self.arena.odor_source) or (self.elapsed_time > 10):
+            # If fly is away from all sources or if the time
+            # in this sub-simulation has exceed a certain time-treshold
+            if sources_far_away == len(self.arena.odor_source) or (
+                self.elapsed_time > 10
+            ):
                 return True
+        # If fly is away from all sources
         elif sources_far_away == len(self.arena.odor_source):
             return True
         else:
@@ -1995,7 +1998,11 @@ class NeuroMechFly(gym.Env):
             self.save_video(self.output_dir / "video.mp4")
 
     def respawn(
-        self, *, seed: Optional[int] = None, options: Optional[Dict] = None
+        self,
+        *,
+        seed: Optional[int] = None,
+        options: Optional[Dict] = None,
+        reset_time=False,
     ) -> Tuple[ObsType, Dict[str, Any]]:
         """Respawn the fly in the initial position to start again exploring,
         the same fly_valence_dictionary is kept for the fly, while the elapsed_time for the sub-simulation is set to zero.
@@ -2010,6 +2017,9 @@ class NeuroMechFly(gym.Env):
             Additional parameter for the simulation. There is none in the
             provided base simulation, so this does not have an effect
             unless extended by the user.
+        reset_time : bool
+            Parameter that decides whether we want to set the curr_time to 0
+            allowing the fly to explore for longer
 
         Returns
         -------
@@ -2028,6 +2038,8 @@ class NeuroMechFly(gym.Env):
                 self._camera_rot = np.eye(3)
         self.elapsed_time = 0
         self._set_init_pose(self.init_pose)
+        if reset_time:
+            self.curr_time = 0
 
         return self.get_observation(), self.get_info()
 
@@ -2045,17 +2057,20 @@ class NeuroMechFly(gym.Env):
             return "hungry"
 
     def compute_closest_yeast_source(self, obs) -> float:
-        """This function returns the index of the closest
+        """
+        This function returns the index of the closest
         yeast source given the current position of the
         fly in the simulation
+
         Parameters
         ----------
         obs: ObsType
-        The observation as defined by the environment.
-        
+            the observation as defined by the environment.
+
         Returns
         -------
         float: the index of the closest yeast source"""
+
         distance = np.inf
         index_source = 0
         for i in range(len(self.arena.odor_source)):
@@ -2067,19 +2082,22 @@ class NeuroMechFly(gym.Env):
                     distance = tmp_distance
                     index_source = i
         return index_source
-    
+
     def compute_closest_source(self, obs) -> float:
-        """This function returns the index of the closest
-        yeast source given the current position of the
+        """
+        This function returns the index of the closest
+        source given the current position of the
         fly in the simulation
         Parameters
         ----------
         obs: ObsType
-        The observation as defined by the environment.
-        
+            The observation as defined by the environment.
+
         Returns
         -------
-        float: the index of the closest yeast source"""
+        float: the index of the closest source
+        """
+
         distance = np.inf
         index_source = 0
         for i in range(len(self.arena.odor_source)):
@@ -2092,13 +2110,15 @@ class NeuroMechFly(gym.Env):
         return index_source
 
     def choose_odor_exploration(self) -> float:
-        """This function acts as the decision module during exploration to see which
+        """
+        This function acts as the decision module during exploration to see which
         odor the fly will explore. It returns the index of the odor that the fly will
         explore according to the food scores table. It should be called only either
         at the start of the exploration or after reaching one of the odor sources.
         If any of the scores are 0, then the fly will explore one of the odors that has
         such a score. If none are 0, then the fly will explore the odors with
-        probabilities depending on their associated scores."""
+        probabilities depending on their associated scores.
+        """
         scores = self.odor_scores
         # If any of the scores are 0, choose a random index where the score is 0
         if np.any(scores < 1e-10):
@@ -2116,13 +2136,14 @@ class NeuroMechFly(gym.Env):
 
     def update_odor_scores(self, idx_odor_source=-1):
         """
+        This function updates the odor scores table depending on
+        which odor source is reached, if any.
+
         Parameters
         ----------
         idx_odor_source: float
-        The index of the source that has been reached.
-
-        This function updates the odor scores table depending on
-        which odor source is reached, if any."""
+            The index of the source that has been reached.
+        """
         # Subtract the time loss from the scores
         for el in self.odor_scores:
             el = -self.odor_score_time_loss
@@ -2137,17 +2158,18 @@ class NeuroMechFly(gym.Env):
             self.odor_scores[self.odor_scores > 100] = 100
 
     def generate_random_walk(self, num_steps):
-        """Function needed to generate random walk
-    
+        """
+        Function needed to generate random walk
+
         Parameters
         ----------
         num_steps: float
-        The number of steps.
-        
+            The number of steps.
+
         Returns
         -------
         Turnings: array
-        Array with the control_signal needed to guide the fly
+            Array with the control_signal needed to guide the fly
         """
         turnings = [np.array([1, 1])]
         count_step_turn = 0
@@ -2215,12 +2237,14 @@ class NeuroMechFly(gym.Env):
         return turnings
 
     def all_sources_explored(self) -> bool:
-        """This function checks if the fly has been able
-        to explore all the different sources around the arena"""
+        """
+        This function checks if the fly has been able
+        to explore all the different sources around the arena
+        """
         if len(self.fly_valence_dictionary) == len(self.arena.valence_dictionary):
-            return True 
+            return True
         else:
-            return False   
+            return False
 
 
 class MuJoCoParameters(Parameters):
