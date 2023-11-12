@@ -538,6 +538,16 @@ class OdorArena(BaseArena):
         for el in range(len(self.peak_odor_intensity)):
             if max_key == self.compute_smell_key_value(self.peak_odor_intensity[el]):
                 return el
+            
+    def compute_richest_source(self) -> float:
+        """This function find the reachest source
+        (the one that has the highest reward)"""
+        arena_valence_dict = self.valence_dictionary
+        found_key = True
+        max_key = max(arena_valence_dict, key=arena_valence_dict.get)
+        for el in range(len(self.peak_odor_intensity)):
+            if max_key == self.compute_smell_key_value(self.peak_odor_intensity[el]):
+                return el
 
     def get_specific_olfaction(self, index_source, sim):
         """This function is needed when the fly wants

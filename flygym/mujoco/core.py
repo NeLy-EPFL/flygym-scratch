@@ -1907,10 +1907,12 @@ class NeuroMechFly(gym.Env):
         # If fly is away from all sources or if the time
         # in this sub-simulation has exceed a certain time-treshold
         if truncation:
-            if sources_far_away == len(self.arena.odor_source) or (self.curr_time > 10):
+            if sources_far_away == len(self.arena.odor_source) or (self.elapsed_time > 10):
                 return True
-
-        return False
+        elif sources_far_away == len(self.arena.odor_source):
+            return True
+        else:
+            return False
 
     def get_info(self):
         """Any additional information that is not part of the observation.
@@ -2064,6 +2066,29 @@ class NeuroMechFly(gym.Env):
                 if self.arena.is_yeast(i):
                     distance = tmp_distance
                     index_source = i
+        return index_source
+    
+    def compute_closest_source(self, obs) -> float:
+        """This function returns the index of the closest
+        yeast source given the current position of the
+        fly in the simulation
+        Parameters
+        ----------
+        obs: ObsType
+        The observation as defined by the environment.
+        
+        Returns
+        -------
+        float: the index of the closest yeast source"""
+        distance = np.inf
+        index_source = 0
+        for i in range(len(self.arena.odor_source)):
+            tmp_distance = np.linalg.norm(
+                obs["fly"][0, :2] - self.arena.odor_source[i, :2]
+            )
+            if tmp_distance < distance:
+                distance = tmp_distance
+                index_source = i
         return index_source
 
     def choose_odor_exploration(self) -> float:
