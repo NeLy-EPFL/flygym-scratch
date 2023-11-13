@@ -4,6 +4,7 @@ import cv2
 import logging
 import warnings
 import sys
+import itertools
 from typing import List, Tuple, Dict, Any, Optional, Union
 from pathlib import Path
 from dataclasses import dataclass
@@ -817,43 +818,43 @@ class NeuroMechFly(gym.Env):
     def _define_self_contacts(self, self_collisions_geoms):
         self_contact_pairs = []
         self_contact_pairs_names = []
-        for geom1 in self_collisions_geoms:
-            for geom2 in self_collisions_geoms:
-                is_duplicate = f"{geom1}_{geom2}" in self_contact_pairs_names
-                if geom1 != geom2 and not is_duplicate:
-                    # Do not add contact if the parent bodies have a child parent
-                    # relationship
-                    body1 = self.model.find("geom", geom1).parent
-                    body2 = self.model.find("geom", geom2).parent
-                    body1_children = [
-                        child.name
-                        for child in body1.all_children()
-                        if child.tag == "body"
-                    ]
-                    body2_children = [
-                        child.name
-                        for child in body2.all_children()
-                        if child.tag == "body"
-                    ]
 
-                    if not (
-                        body1.name == body2.name
-                        or body1.name in body2_children
-                        or body2.name in body1_children
-                        or body1.name in body2.parent.name
-                        or body2.name in body1.parent.name
-                    ):
-                        contact_pair = self.model.contact.add(
-                            "pair",
-                            name=f"{geom1}_{geom2}",
-                            geom1=geom1,
-                            geom2=geom2,
-                            solref=self.sim_params.contact_solref,
-                            solimp=self.sim_params.contact_solimp,
-                            margin=0.0,  # change margin to avoid penetration
-                        )
-                        self_contact_pairs.append(contact_pair)
-                        self_contact_pairs_names.append(f"{geom1}_{geom2}")
+        # If geom are strings then pair everything
+        if all([isinstance(geom, str) for geom in self_collisions_geoms]):
+            self_collisions_geoms = itertools.combinations(self_collisions_geoms, 2)
+
+        for geom1, geom2 in self_collisions_geoms:
+            is_duplicate = f"{geom1}_{geom2}" in self_contact_pairs_names
+            if geom1 != geom2 and not is_duplicate:
+                # Do not add contact if the parent bodies have a child parent
+                # relationship
+                body1 = self.model.find("geom", geom1).parent
+                body2 = self.model.find("geom", geom2).parent
+                body1_children = [
+                    child.name for child in body1.all_children() if child.tag == "body"
+                ]
+                body2_children = [
+                    child.name for child in body2.all_children() if child.tag == "body"
+                ]
+
+                if not (
+                    body1.name == body2.name
+                    or body1.name in body2_children
+                    or body2.name in body1_children
+                    or body1.name in body2.parent.name
+                    or body2.name in body1.parent.name
+                ):
+                    contact_pair = self.model.contact.add(
+                        "pair",
+                        name=f"{geom1}_{geom2}",
+                        geom1=geom1,
+                        geom2=geom2,
+                        solref=self.sim_params.contact_solref,
+                        solimp=self.sim_params.contact_solimp,
+                        margin=0.0,  # change margin to avoid penetration
+                    )
+                    self_contact_pairs.append(contact_pair)
+                    self_contact_pairs_names.append(f"{geom1}_{geom2}")
         return self_contact_pairs, self_contact_pairs_names
 
     def _define_floor_contacts(self, floor_collisions_geoms):
