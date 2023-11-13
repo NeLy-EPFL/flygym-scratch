@@ -187,7 +187,7 @@ class HybridTurningNMF(NeuroMechFly):
         self.stumbling_correction = np.zeros(6)
         return obs, info
 
-    def step(self, action, truncation=True):
+    def step(self, action, truncation=True, angle_key=False):
         """Step the simulation forward one timestep.
 
         Parameters
@@ -253,7 +253,7 @@ class HybridTurningNMF(NeuroMechFly):
             "joints": np.array(np.concatenate(joints_angles)),
             "adhesion": np.array(adhesion_onoff).astype(int),
         }
-        return super().step(action, truncation)
+        return super().step(action, truncation, angle_key)
 
 
 if __name__ == "__main__":

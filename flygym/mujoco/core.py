@@ -378,8 +378,11 @@ class NeuroMechFly(gym.Env):
             The mating state of the fly (virgin/mated). This state determines what food sources
             the fly looks for.
         odor_scores : np.ndarray, size (n_unique_odors,)
-            The table recording the score associated to each individual different food odor. Scores
-            are between 0 and 100. Different odors are differentiated by their [a, b] intensity pairs.
+            The table recording the score associated to each individual different food odor present on the arena.
+            Scores are between 0 and 100. Different odors are differentiated by their [a, b] intensity pairs.
+        key_odor_scores : dictionary
+            The dictionary recording the score associated to each individual different food odor source. The key for the smell is the same key as in the arena.valence_dictionary. Scores
+            are between 0 and 100.
         odor_score_reach_addition : float
             The score amount added to the odor_scores table when a fly reaches the source of an odor.
             It corresponds to the fly's cerntainty that the odor source it followed corresponds to the
@@ -427,6 +430,12 @@ class NeuroMechFly(gym.Env):
         self.food_loss_rate = food_loss_rate
         self.food_stocked_init = food_stocked_init
         self.food_stocked_curr = self.food_stocked_init
+        self.key_odor_scores = {}
+        for i in range(self.arena.num_odor_sources):
+                smell_key_value = self.arena.compute_smell_angle_value(
+                    self.arena.peak_odor_intensity[i]
+                )
+                self.key_odor_scores.update({smell_key_value: 0})
 
         if (mating_state != "virgin") and (mating_state != "mated"):
             logging.warning("Invalid mating state, mating state set to virgin")
@@ -1313,7 +1322,7 @@ class NeuroMechFly(gym.Env):
         return self.get_observation(), self.get_info()
 
     def step(
-        self, action: ObsType, truncation=True
+        self, action: ObsType, truncation=True, angle_key=False
     ) -> Tuple[ObsType, float, bool, bool, Dict[str, Any]]:
         """Step the Gym environment.
 
@@ -1353,7 +1362,7 @@ class NeuroMechFly(gym.Env):
         self.curr_time += self.timestep
         self.elapsed_time += self.timestep
         observation = self.get_observation()
-        reward = self.get_reward(observation)
+        reward = self.get_reward(observation, angle_key)
         terminated = self.is_terminated()
         truncated = self.is_truncated(observation, truncation)
         self.food_stocked_curr -= self.food_loss_rate
@@ -1836,7 +1845,7 @@ class NeuroMechFly(gym.Env):
 
         return obs
 
-    def get_reward(self, obs):
+    def get_reward(self, obs, angle_key):
         """
         Get the reward for the current state of the environment
         once the fly is closed enough to the odor source
@@ -1854,11 +1863,18 @@ class NeuroMechFly(gym.Env):
             # if fly is within 2mm of the attractive/aversive odor source
             if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) < 2:
                 # the fly gets the reward
-                smell_key_value = self.arena.compute_smell_key_value(
-                    self.arena.peak_odor_intensity[i]
-                )
-                reward = self.arena.valence_dictionary.get(smell_key_value)
-                self.fly_valence_dictionary.update(({smell_key_value: reward}))
+                if angle_key:
+                    smell_key_value = self.arena.compute_smell_angle_value(
+                        self.arena.peak_odor_intensity[i]
+                    )
+                    reward = self.arena.valence_dictionary.get(smell_key_value)
+                    self.fly_valence_dictionary.update(({smell_key_value: reward}))
+                else:
+                    smell_key_value = self.arena.compute_smell_key_value(
+                        self.arena.peak_odor_intensity[i]
+                    )
+                    reward = self.arena.valence_dictionary.get(smell_key_value)
+                    self.fly_valence_dictionary.update(({smell_key_value: reward}))
                 return reward
 
     def is_terminated(self):
@@ -2156,6 +2172,25 @@ class NeuroMechFly(gym.Env):
         # If any of the scores are above 50, set them to 50
         if np.any(self.odor_scores > 100):
             self.odor_scores[self.odor_scores > 100] = 100
+
+    def update_odor_scores_key(self, idx_odor_source=-1):
+        """
+        This function updates the odor scores dictionary depending on
+        which odor source is reached, if any.
+
+        Parameters
+        ----------
+        idx_odor_source: float
+            The index of the source that has been reached.
+        """
+        for key, values in self.key_odor_scores.items():
+            self.key_odor_scores[key] = values - self.odor_score_time_loss
+        self.key_odor_scores[self.arena.compute_smell_angle_value(self.arena.peak_odor_intensity[idx_odor_source])] += self.odor_score_reach_addition
+        for key, values in self.key_odor_scores.items():
+            if(self.key_odor_scores[key] < 0):
+                self.key_odor_scores[key] = 0
+            elif (self.key_odor_scores[key] > 100):
+                self.key_odor_scores[key] = 100
 
     def generate_random_walk(self, num_steps):
         """
