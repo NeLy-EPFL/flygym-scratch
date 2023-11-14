@@ -710,18 +710,3 @@ class OdorArena(BaseArena):
         """
         return self.peak_odor_intensity
 
-    def generate_peak_intensity_for_exploration(self):
-        """
-        Method to compute the peak intensity needed
-        for assuming that all the odor sources while
-        exploring are attractive so that
-        the fly discovers them"""
-        for el in range(len(self.peak_odor_intensity)):
-            self.peak_odor_intensity[el] = [1, 0]
-
-    def generate_original_peak_intensity(self, peak_intensity):
-        """
-        Method to reconvert the peak intensity
-        to the original one passed as a parameter
-        """
-        self.peak_odor_intensity = np.array(peak_intensity)
