@@ -572,7 +572,6 @@ class OdorArena(BaseArena):
             max_key = max(arena_valence_dict, key=arena_valence_dict.get)
             if max_key < 0:
                 arena_valence_dict.pop(max_key)
-                print(arena_valence_dict)
             else:
                 found_key = False
         for el in range(len(self.peak_odor_intensity)):
@@ -732,7 +731,6 @@ class OdorArena(BaseArena):
         for el in range(len(self.peak_odor_intensity)):
             if max_key == self.compute_smell_angle_value(self.peak_odor_intensity[el]):
                 possible_sources.append(el)
-                print(el)
         distance = np.inf
         index_source = 0
         for i in possible_sources:
