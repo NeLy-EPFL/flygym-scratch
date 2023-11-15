@@ -709,4 +709,22 @@ class OdorArena(BaseArena):
         intensity of the arena
         """
         return self.peak_odor_intensity
+    
+    def compute_richest_closest_source(self, obs) -> float:
+        max_key = max(self.valence_dictionary, key=self.valence_dictionary.get)
+        possible_sources = []
+        for el in range(len(self.peak_odor_intensity)):
+            if max_key == self.compute_smell_angle_value(self.peak_odor_intensity[el]):
+                possible_sources.append(el)
+                print(el)
+        distance = np.inf
+        index_source = 0
+        for i in (possible_sources):
+            tmp_distance = np.linalg.norm(
+                obs["fly"][0, :2] - self.odor_source[i, :2]
+            )
+            if tmp_distance < distance:
+                distance = tmp_distance
+                index_source = i
+        return(index_source)
 

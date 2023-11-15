@@ -3,6 +3,7 @@ import imageio
 import cv2
 import logging
 import warnings
+import random
 import sys
 from typing import List, Tuple, Dict, Any, Optional, Union
 from pathlib import Path
@@ -2149,6 +2150,41 @@ class NeuroMechFly(gym.Env):
             for i in range(len(inv_scores)):
                 if rand_int < np.sum(inv_scores[: i + 1]):
                     return i
+                
+    def choose_angle_key_odor_exploration(self) -> float:
+        """
+        This function acts as the decision module during exploration to see which
+        odor the fly will explore. It returns the index of the odor that the fly will
+        explore according to the food scores table. It should be called only either
+        at the start of the exploration or after reaching one of the odor sources.
+        If any of the scores are 0, then the fly will explore one of the odors that has
+        such a score. If none are 0, then the fly will explore the odors with
+        probabilities depending on their associated scores.
+        """
+        scores = np.array([*self.key_odor_scores.values()])
+        # If any of the scores are 0, choose a random index where the score is 0
+        if np.any(scores < 1e-10):
+            idxs = np.where(scores < 1e-10)[0]
+            return np.random.choice(idxs)
+        # If non of the scores are 0
+        else:
+            chosen_source = None
+            inv_scores = 101 - scores
+            # Choose the index in a random manner according to the inverse scores
+            sum_inv_scores = np.sum(inv_scores)
+            rand_int = np.random.randint(0, sum_inv_scores, dtype=np.int64())
+            for i in range(len(inv_scores)):
+                if rand_int < np.sum(inv_scores[: i + 1]):
+                    chosen_source = i
+                    break
+            key = list(self.key_odor_scores)[chosen_source]
+            possible_sources = []
+            for el in range(len(self.arena.peak_odor_intensity)):
+                if key == self.arena.compute_smell_angle_value(self.arena.peak_odor_intensity[el]):
+                    possible_sources.append(el)
+            source_idx = random.choice(possible_sources)
+            return source_idx
+
 
     def update_odor_scores(self, idx_odor_source=-1):
         """
