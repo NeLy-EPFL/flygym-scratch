@@ -1321,7 +1321,6 @@ class NeuroMechFly(gym.Env):
         self.food_stocked_curr = self.food_stocked_init
         n_unique_odors = np.unique(self.arena.get_odor_intensities(), axis=0)
         self.odor_scores = np.zeros(n_unique_odors.shape[0])
-        self.key_odor_scores = {}
         return self.get_observation(), self.get_info()
 
     def step(
