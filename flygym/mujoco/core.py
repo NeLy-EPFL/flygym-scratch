@@ -382,7 +382,8 @@ class NeuroMechFly(gym.Env):
             The table recording the score associated to each individual different food odor present on the arena.
             Scores are between 0 and 100. Different odors are differentiated by their [a, b] intensity pairs.
         key_odor_scores : dictionary
-            The dictionary recording the score associated to each individual different food odor source. The key for the smell is the same key as in the arena.valence_dictionary. Scores
+            The dictionary recording the score associated to each individual different food odor source.
+            The key for the smell is the same key as in the arena.valence_dictionary. Scores
             are between 0 and 100.
         odor_score_reach_addition : float
             The score amount added to the odor_scores table when a fly reaches the source of an odor.
@@ -433,10 +434,10 @@ class NeuroMechFly(gym.Env):
         self.food_stocked_curr = self.food_stocked_init
         self.key_odor_scores = {}
         for i in range(self.arena.num_odor_sources):
-                smell_key_value = self.arena.compute_smell_angle_value(
-                    self.arena.peak_odor_intensity[i]
-                )
-                self.key_odor_scores.update({smell_key_value: 0})
+            smell_key_value = self.arena.compute_smell_angle_value(
+                self.arena.peak_odor_intensity[i]
+            )
+            self.key_odor_scores.update({smell_key_value: 0})
 
         if (mating_state != "virgin") and (mating_state != "mated"):
             logging.warning("Invalid mating state, mating state set to virgin")
@@ -1320,6 +1321,7 @@ class NeuroMechFly(gym.Env):
         self.food_stocked_curr = self.food_stocked_init
         n_unique_odors = np.unique(self.arena.get_odor_intensities(), axis=0)
         self.odor_scores = np.zeros(n_unique_odors.shape[0])
+        self.key_odor_scores = {}
         return self.get_observation(), self.get_info()
 
     def step(
@@ -2150,12 +2152,12 @@ class NeuroMechFly(gym.Env):
             for i in range(len(inv_scores)):
                 if rand_int < np.sum(inv_scores[: i + 1]):
                     return i
-                
+
     def choose_angle_key_odor_exploration(self) -> float:
         """
         This function acts as the decision module during exploration to see which
         odor the fly will explore. It returns the index of the odor that the fly will
-        explore according to the food scores table. It should be called only either
+        explore according to the key food scores table. It should be called only either
         at the start of the exploration or after reaching one of the odor sources.
         If any of the scores are 0, then the fly will explore one of the odors that has
         such a score. If none are 0, then the fly will explore the odors with
@@ -2180,11 +2182,12 @@ class NeuroMechFly(gym.Env):
             key = list(self.key_odor_scores)[chosen_source]
             possible_sources = []
             for el in range(len(self.arena.peak_odor_intensity)):
-                if key == self.arena.compute_smell_angle_value(self.arena.peak_odor_intensity[el]):
+                if key == self.arena.compute_smell_angle_value(
+                    self.arena.peak_odor_intensity[el]
+                ):
                     possible_sources.append(el)
             source_idx = random.choice(possible_sources)
             return source_idx
-
 
     def update_odor_scores(self, idx_odor_source=-1):
         """
@@ -2221,11 +2224,15 @@ class NeuroMechFly(gym.Env):
         """
         for key, values in self.key_odor_scores.items():
             self.key_odor_scores[key] = values - self.odor_score_time_loss
-        self.key_odor_scores[self.arena.compute_smell_angle_value(self.arena.peak_odor_intensity[idx_odor_source])] += self.odor_score_reach_addition
+        self.key_odor_scores[
+            self.arena.compute_smell_angle_value(
+                self.arena.peak_odor_intensity[idx_odor_source]
+            )
+        ] += self.odor_score_reach_addition
         for key, values in self.key_odor_scores.items():
-            if(self.key_odor_scores[key] < 0):
+            if self.key_odor_scores[key] < 0:
                 self.key_odor_scores[key] = 0
-            elif (self.key_odor_scores[key] > 100):
+            elif self.key_odor_scores[key] > 100:
                 self.key_odor_scores[key] = 100
 
     def generate_random_walk(self, num_steps):

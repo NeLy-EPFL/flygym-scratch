@@ -606,7 +606,7 @@ class OdorArena(BaseArena):
         _odor_source_repeated = np.repeat(
             _odor_source_repeated, self.num_sensors, axis=2
         )
-        if np.shape(peak_intensity) ==  0:
+        if np.shape(peak_intensity) == 0:
             peak_intensity = self.peak_odor_intensity
 
             peak_odor_intesity = peak_intensity[index_source]
@@ -670,7 +670,7 @@ class OdorArena(BaseArena):
         return control_signal
 
     def generate_specific_turning_control(
-        self, index_source, sim, peak_intensity = np.empty(0), attractive_gain=-500
+        self, index_source, sim, peak_intensity=np.empty(0), attractive_gain=-500
     ):
         """
         This functions is used to compute
@@ -709,8 +709,24 @@ class OdorArena(BaseArena):
         intensity of the arena
         """
         return self.peak_odor_intensity
-    
+
     def compute_richest_closest_source(self, obs) -> float:
+        """
+        This method is used to compute the closest source to the fly that has the highest reward.
+        A reward can be shared between different sources of the same smell.
+        Therefore with this function the fly computes the highest possible reward
+        and then looks for the closes source with this reward.
+
+        Parameters
+        ----------
+        obs: ObsType
+            The observation as defined by the environment.
+
+        Returns
+        -------
+        source index
+
+        """
         max_key = max(self.valence_dictionary, key=self.valence_dictionary.get)
         possible_sources = []
         for el in range(len(self.peak_odor_intensity)):
@@ -719,12 +735,9 @@ class OdorArena(BaseArena):
                 print(el)
         distance = np.inf
         index_source = 0
-        for i in (possible_sources):
-            tmp_distance = np.linalg.norm(
-                obs["fly"][0, :2] - self.odor_source[i, :2]
-            )
+        for i in possible_sources:
+            tmp_distance = np.linalg.norm(obs["fly"][0, :2] - self.odor_source[i, :2])
             if tmp_distance < distance:
                 distance = tmp_distance
                 index_source = i
-        return(index_source)
-
+        return index_source
