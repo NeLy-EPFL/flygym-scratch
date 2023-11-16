@@ -420,7 +420,7 @@ class NeuroMechFly(gym.Env):
         self._last_tarsalseg_names = [
             f"{side}{pos}Tarsus5" for side in "LR" for pos in "FMH"
         ]
-        # Set up for being able to learn and memorize 
+        # Set up for being able to learn and memorize
         # considering the internal state
         if len(fly_valence_dictionary) == 0:
             self.fly_valence_dictionary = {}
@@ -1339,7 +1339,7 @@ class NeuroMechFly(gym.Env):
             the simulatio if certain time conditions are satisfied
         angle_key : bool
             This boolean is used to decide the way the fly receives the reward, meaning
-            if the fly receives the reward associated to the source (angle_key = False) 
+            if the fly receives the reward associated to the source (angle_key = False)
             or to the smell (angle_key = True)
 
         Returns
@@ -2072,7 +2072,7 @@ class NeuroMechFly(gym.Env):
 
         return self.get_observation(), self.get_info()
 
-    def compute_internal_state(self):
+    def compute_internal_state(self) -> str:
         """
         Compute the internal state of the fly
         given the AAs' levels.
@@ -2169,7 +2169,7 @@ class NeuroMechFly(gym.Env):
     def choose_angle_key_odor_exploration(self) -> float:
         """
         This function acts as the decision module during exploration to see which
-        odor the fly will explore. It returns the index of the odor that the fly will
+        odor the fly will explore. It returns the index of the odor (chosen randomly) that the fly will
         explore according to the key food scores table. It should be called only either
         at the start of the exploration or after reaching one of the odor sources.
         If any of the scores are 0, then the fly will explore one of the odors that has
@@ -2193,7 +2193,7 @@ class NeuroMechFly(gym.Env):
                     chosen_source = i
                     break
             # look at the different possible sources associated to the chosen smell
-            # choose one randomly betwenn the possible ones 
+            # choose one randomly betwenn the possible ones
             key = list(self.key_odor_scores)[chosen_source]
             possible_sources = []
             for el in range(len(self.arena.peak_odor_intensity)):
@@ -2204,7 +2204,7 @@ class NeuroMechFly(gym.Env):
             source_idx = random.choice(possible_sources)
             return source_idx
 
-    def update_odor_scores(self, idx_odor_source=-1):
+    def update_odor_scores(self, idx_odor_source=-1) -> None:
         """
         This function updates the odor scores table depending on
         which odor source is reached, if any.
@@ -2227,7 +2227,7 @@ class NeuroMechFly(gym.Env):
         if np.any(self.odor_scores > 100):
             self.odor_scores[self.odor_scores > 100] = 100
 
-    def update_odor_scores_key(self, idx_odor_source=-1):
+    def update_odor_scores_key(self, idx_odor_source=-1) -> None:
         """
         This function updates the key odor scores dictionary depending on
         which odor source is reached, if any.
