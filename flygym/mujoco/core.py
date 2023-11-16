@@ -382,7 +382,7 @@ class NeuroMechFly(gym.Env):
             The table recording the score associated to each individual different food odor present on the arena.
             Scores are between 0 and 100. Different odors are differentiated by their [a, b] intensity pairs.
         key_odor_scores : dictionary
-            The dictionary recording the score associated to each individual different food odor source.
+            The dictionary recording the score associated to each individual different food odor smell.
             The key for the smell is the same key as in the arena.valence_dictionary. Scores
             are between 0 and 100.
         odor_score_reach_addition : float
@@ -420,7 +420,8 @@ class NeuroMechFly(gym.Env):
         self._last_tarsalseg_names = [
             f"{side}{pos}Tarsus5" for side in "LR" for pos in "FMH"
         ]
-
+        # Set up for being able to learn and memorize 
+        # considering the internal state
         if len(fly_valence_dictionary) == 0:
             self.fly_valence_dictionary = {}
         else:
@@ -432,6 +433,7 @@ class NeuroMechFly(gym.Env):
         self.food_loss_rate = food_loss_rate
         self.food_stocked_init = food_stocked_init
         self.food_stocked_curr = self.food_stocked_init
+
         self.key_odor_scores = {}
         for i in range(self.arena.num_odor_sources):
             smell_key_value = self.arena.compute_smell_angle_value(
@@ -1335,6 +1337,10 @@ class NeuroMechFly(gym.Env):
         truncation : bool
             This boolean value is used to decide whether we want to truncate
             the simulatio if certain time conditions are satisfied
+        angle_key : bool
+            This boolean is used to decide the way the fly receives the reward, meaning
+            if the fly receives the reward associated to the source (angle_key = False) 
+            or to the smell (angle_key = True)
 
         Returns
         -------
@@ -1397,8 +1403,8 @@ class NeuroMechFly(gym.Env):
         Parameters
         ----------
         plot_internal_state : bool
-        This parameters decide if we want to plot as well
-        the internal state of the fly (mating state, food stocks (AAs) level)
+            This parameters decide if we want to plot as well
+            the internal state of the fly (mating state, food stocks (AAs) level)
 
         Returns
         -------
@@ -1847,7 +1853,7 @@ class NeuroMechFly(gym.Env):
 
         return obs
 
-    def get_reward(self, obs, angle_key):
+    def get_reward(self, obs, angle_key) -> float:
         """
         Get the reward for the current state of the environment
         once the fly is closed enough to the odor source
@@ -1856,10 +1862,15 @@ class NeuroMechFly(gym.Env):
         ----------
         obs: ObsType
             The observation as defined by the environment.
+        angle_key : bool
+            Whether the fly receives the reward associated to the food source
+            (angle_key = False) or to the smell (angle_key = True)
 
         Returns
         -------
-        reward"""
+        reward: float
+            The reward
+        """
 
         for i in range(len(self.arena.odor_source)):
             # if fly is within 2mm of the attractive/aversive odor source
@@ -1910,7 +1921,7 @@ class NeuroMechFly(gym.Env):
 
         truncation: bool
             Whether we allow the simulation to be truncated if certain time
-        conditions are met.
+            conditions are met.
 
         Returns
         -------
@@ -2087,7 +2098,9 @@ class NeuroMechFly(gym.Env):
 
         Returns
         -------
-        float: the index of the closest yeast source"""
+        index_source : float
+            the index of the closest yeast source
+        """
 
         distance = np.inf
         index_source = 0
@@ -2113,7 +2126,8 @@ class NeuroMechFly(gym.Env):
 
         Returns
         -------
-        float: the index of the closest source
+        index_source : float
+            the index of the closest yeast source
         """
 
         distance = np.inf
@@ -2178,6 +2192,8 @@ class NeuroMechFly(gym.Env):
                 if rand_int < np.sum(inv_scores[: i + 1]):
                     chosen_source = i
                     break
+            # look at the different possible sources associated to the chosen smell
+            # choose one randomly betwenn the possible ones 
             key = list(self.key_odor_scores)[chosen_source]
             possible_sources = []
             for el in range(len(self.arena.peak_odor_intensity)):
@@ -2213,7 +2229,7 @@ class NeuroMechFly(gym.Env):
 
     def update_odor_scores_key(self, idx_odor_source=-1):
         """
-        This function updates the odor scores dictionary depending on
+        This function updates the key odor scores dictionary depending on
         which odor source is reached, if any.
 
         Parameters

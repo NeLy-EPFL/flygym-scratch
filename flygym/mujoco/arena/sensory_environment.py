@@ -714,7 +714,7 @@ class OdorArena(BaseArena):
         This method is used to compute the closest source to the fly that has the highest reward.
         A reward can be shared between different sources of the same smell.
         Therefore with this function the fly computes the highest possible reward
-        and then looks for the closes source with this reward.
+        and then looks for the closest source with this reward.
 
         Parameters
         ----------
