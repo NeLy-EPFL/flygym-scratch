@@ -169,12 +169,11 @@ class OdorArena(BaseArena):
         # Aversive : red, attractive : blue, neutral : green
         if marker_colors is None:
             marker_colors = []
-            num_odor_sources = self.odor_source.shape[0]
             intensity_norms = []
             norm_intensities = self.peak_odor_intensity
 
             # First normalize the peak intensities
-            for i in range(num_odor_sources):
+            for i in range(self.num_odor_sources):
                 intensity_norms.append(np.linalg.norm(norm_intensities[i]))
             # If any norms are over 100, normalize all intensities by the same factor
             max_norm = np.max(intensity_norms)
@@ -182,7 +181,7 @@ class OdorArena(BaseArena):
                 norm_intensities = norm_intensities / (max_norm / 100)
 
             # Then assign colors depending on the valence of the odor
-            for i in range(num_odor_sources):
+            for i in range(self.num_odor_sources):
                 curr_intensity = norm_intensities[i]
                 # white marker for (quasi-)nonexistant odor
                 if curr_intensity[0] < 1e-2 and curr_intensity[1] < 1e-2:
