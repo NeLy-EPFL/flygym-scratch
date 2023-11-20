@@ -36,6 +36,8 @@ import flygym.mujoco.preprogrammed as preprogrammed
 import flygym.mujoco.state as state
 import flygym.mujoco.vision as vision
 from flygym.mujoco.arena import BaseArena, FlatTerrain
+from flygym.mujoco.arena.food_sources import FoodSource
+from flygym.mujoco.arena import change_rgba
 from flygym.common import get_data_path
 
 
@@ -2114,7 +2116,7 @@ class NeuroMechFly(gym.Env):
                     index_source = i
         return index_source
 
-    def compute_closest_source(self, obs) -> float:
+    def compute_closest_source(self, obs, food_source = False) -> float:
         """
         This function returns the index of the closest
         source given the current position of the
@@ -2132,13 +2134,22 @@ class NeuroMechFly(gym.Env):
 
         distance = np.inf
         index_source = 0
-        for i in range(len(self.arena.odor_source)):
-            tmp_distance = np.linalg.norm(
-                obs["fly"][0, :2] - self.arena.odor_source[i, :2]
-            )
-            if tmp_distance < distance:
-                distance = tmp_distance
-                index_source = i
+        if food_source:
+            for i in range(len(self.arena.food_sources)):
+                tmp_distance = np.linalg.norm(
+                    obs["fly"][0, :2] - self.arena.food_sources[i].position[:2]
+                )
+                if tmp_distance < distance:
+                    distance = tmp_distance
+                    index_source = i
+        else:
+            for i in range(len(self.arena.odor_source)):
+                tmp_distance = np.linalg.norm(
+                    obs["fly"][0, :2] - self.arena.odor_source[i, :2]
+                )
+                if tmp_distance < distance:
+                    distance = tmp_distance
+                    index_source = i
         return index_source
 
     def choose_odor_exploration(self) -> float:
@@ -2338,6 +2349,34 @@ class NeuroMechFly(gym.Env):
             return True
         else:
             return False
+    
+    def add_new_source(self):
+        x = random.uniform(0.0, 1.0)
+        if x > 0:
+            x_pos, y_pos = np.random.randint(0, 50, 2)
+            peak_intensity_x, peak_intensity_y = np.random.randint(0, 10, 2)
+            odor_valence = self.compute_new_valence(peak_intensity_x, peak_intensity_y)
+            odor_key = self.arena.compute_smell_angle_value(np.array([peak_intensity_x, peak_intensity_y]))
+            new_source = FoodSource([x_pos, y_pos , 1.5], [peak_intensity_x, peak_intensity_y], round(odor_valence), change_rgba([np.random.randint(255), np.random.randint(255), np.random.randint(255), 1]))
+            self.arena.add_source(new_source)
+            self.arena.valence_dictionary[odor_key] = round(odor_valence)
+            self.fly_valence_dictionary[odor_key] = round(odor_valence)
+            self.key_odor_scores[odor_key] = round(odor_valence)
+
+    def compute_new_valence(self, peak_intensity_x, peak_intensity_y):
+        confidence_level = 0
+        peak_intensity = np.array([peak_intensity_x, peak_intensity_y])
+        normalized_peak_intensity = self.arena.normalize_peak_intensity(peak_intensity)
+        for el in range(len(self.arena.food_sources)):
+            normalized_el = self.arena.normalize_peak_intensity(self.arena.peak_odor_intensity[el])
+            angle_rad = np.arccos(np.dot(normalized_el, normalized_peak_intensity))
+            angle_deg = np.degrees(angle_rad)
+            cosine = np.cos(angle_deg)
+            confidence_el = self.arena.valence_dictionary.get(self.arena.compute_smell_angle_value(self.arena.peak_odor_intensity[el]))
+            confidence_level += confidence_el*cosine
+        if confidence_level < 0:
+            confidence_level = 0
+        return confidence_level
 
 
 class MuJoCoParameters(Parameters):

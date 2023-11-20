@@ -602,7 +602,7 @@ class OdorArena(BaseArena):
             if max_key == self.compute_smell_key_value(self.peak_odor_intensity[el]):
                 return el
 
-    def get_specific_olfaction(self, index_source, sim, peak_intensity):
+    def get_specific_olfaction(self, index_source, sim):
         """
         This function is needed when the fly wants
         to reach a specific source.
@@ -618,24 +618,14 @@ class OdorArena(BaseArena):
         _odor_source_repeated = np.repeat(
             _odor_source_repeated, self.num_sensors, axis=2
         )
-        if np.shape(peak_intensity) == 0:
-            peak_intensity = self.peak_odor_intensity
-
-            peak_odor_intesity = peak_intensity[index_source]
-            peak_odor_intesity = np.expand_dims(peak_odor_intesity, axis=0)
-            _peak_intensity_repeated = peak_odor_intesity[:, :, np.newaxis]
-            _peak_intensity_repeated = np.repeat(
-                _peak_intensity_repeated, self.num_sensors, axis=2
-            )
-            _peak_intensity_repeated = _peak_intensity_repeated
-        else:
-            peak_odor_intesity = self.peak_odor_intensity[index_source]
-            peak_odor_intesity = np.expand_dims(peak_odor_intesity, axis=0)
-            _peak_intensity_repeated = peak_odor_intesity[:, :, np.newaxis]
-            _peak_intensity_repeated = np.repeat(
-                _peak_intensity_repeated, self.num_sensors, axis=2
-            )
-            _peak_intensity_repeated = _peak_intensity_repeated
+        
+        peak_odor_intesity = self.peak_odor_intensity[index_source]
+        peak_odor_intesity = np.expand_dims(peak_odor_intesity, axis=0)
+        _peak_intensity_repeated = peak_odor_intesity[:, :, np.newaxis]
+        _peak_intensity_repeated = np.repeat(
+            _peak_intensity_repeated, self.num_sensors, axis=2
+        )
+        _peak_intensity_repeated = _peak_intensity_repeated
         antennae_pos = sim.physics.bind(sim._antennae_sensors).sensordata
         antennae_pos = antennae_pos.reshape(4, 3)
         antennae_pos_repeated = antennae_pos[np.newaxis, np.newaxis, :, :]
@@ -682,7 +672,7 @@ class OdorArena(BaseArena):
         return control_signal
 
     def generate_specific_turning_control(
-        self, index_source, sim, peak_intensity=np.empty(0), attractive_gain=-500
+        self, index_source, sim, attractive_gain=-500
     ):
         """
         This functions is used to compute
@@ -693,7 +683,7 @@ class OdorArena(BaseArena):
         by the index_source.
         """
 
-        obs = self.get_specific_olfaction(index_source, sim, peak_intensity)
+        obs = self.get_specific_olfaction(index_source, sim)
 
         attractive_intensities = np.average(
             obs[0, :].reshape(2, 2), axis=0, weights=[9, 1]

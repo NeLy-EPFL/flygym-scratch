@@ -11,6 +11,12 @@ from .sensory_environment import OdorArena
 
 logging.basicConfig(level=logging.INFO)
 
+def change_rgba(rgba):
+    temp = []
+    for i in range(3):
+        temp.append(rgba[i]/256)
+    temp.append(rgba[3])
+    return temp
 
 class OdorArenaEnriched(OdorArena):
     """Flat terrain with food sources.

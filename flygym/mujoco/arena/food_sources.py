@@ -59,5 +59,16 @@ class FoodSource:
     def move_source(self, new_position):
         self.position = new_position
 
+    def move_source_update(self, new_pos = np.empty(0)):
+        self.stock -= 1
+        if self.stock == 0:
+            self.stock = 5
+            if np.shape(new_pos) == 0:
+                x_pos, y_pos = np.random.randint(0, 50, 2)
+                new_pos = [x_pos, y_pos , 1.5]
+                self.position = new_pos
+            else:
+                self.position = new_pos
+
     def consume(self):
         self.stock -= 1
