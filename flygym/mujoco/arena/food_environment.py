@@ -11,6 +11,7 @@ from .sensory_environment import OdorArena
 
 logging.basicConfig(level=logging.INFO)
 
+
 class OdorArenaEnriched(OdorArena):
     """Flat terrain with food sources.
     Attributes
@@ -43,23 +44,31 @@ class OdorArenaEnriched(OdorArena):
         For each smell, a value for the key of the dictionary is computed
         to which the valence of the smell is associated in the dictionary.
     """
+
     def __init__(
-    self,
-    size: Tuple[float, float] = (300, 300),
-    friction: Tuple[float, float, float] = (1, 0.005, 0.0001),
-    num_sensors: int = 4,
-    food_sources: list = [FoodSource(np.array([[10, 0, 0]]), np.array([[1]]), np.array([[0]]))],
-    diffuse_func: Callable = lambda x: x**-2,
-    marker_colors: Optional[List[Tuple[float, float, float, float]]] = None,
-    marker_size: float = 0.25,
-    key_angle: bool = False,
+        self,
+        size: Tuple[float, float] = (300, 300),
+        friction: Tuple[float, float, float] = (1, 0.005, 0.0001),
+        num_sensors: int = 4,
+        food_sources: list = [
+            FoodSource(np.array([[10, 0, 0]]), np.array([[1]]), np.array([[0]]))
+        ],
+        diffuse_func: Callable = lambda x: x**-2,
+        marker_colors: Optional[List[Tuple[float, float, float, float]]] = None,
+        marker_size: float = 0.25,
+        key_angle: bool = False,
     ):
-        super().__init__(size, friction, num_sensors, 
-                       np.array([source.position for source in food_sources]), 
-                       np.array([source.peak_intensity for source in food_sources]),
-                       np.array([source.odor_valence for source in food_sources]),
-                       diffuse_func, marker_colors, marker_size, key_angle
-                       )
-        
+        super().__init__(
+            size,
+            friction,
+            num_sensors,
+            np.array([source.position for source in food_sources]),
+            np.array([source.peak_intensity for source in food_sources]),
+            np.array([source.odor_valence for source in food_sources]),
+            diffuse_func,
+            marker_colors,
+            marker_size,
+            key_angle,
+        )
+
         self.food_sources = food_sources
-        
