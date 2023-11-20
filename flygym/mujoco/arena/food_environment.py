@@ -11,7 +11,7 @@ from .sensory_environment import OdorArena
 
 logging.basicConfig(level=logging.INFO)
 
-class OdorArena2(OdorArena):
+class OdorArenaEnriched(OdorArena):
     """Flat terrain with food sources.
     Attributes
     ----------
