@@ -59,34 +59,49 @@ class OdorArenaEnriched(OdorArena):
         key_angle: bool = False,
     ):
         """First initializer with list of food sources."""
-        super().__init__(size, friction, num_sensors, 
-                       np.array([source.position for source in food_sources]), 
-                       np.array([source.peak_intensity for source in food_sources]),
-                       np.array([source.odor_valence for source in food_sources]),
-                       diffuse_func, marker_colors, marker_size, key_angle
-                       )
+        super().__init__(
+            size,
+            friction,
+            num_sensors,
+            np.array([source.position for source in food_sources]),
+            np.array([source.peak_intensity for source in food_sources]),
+            np.array([source.odor_valence for source in food_sources]),
+            diffuse_func,
+            marker_colors,
+            marker_size,
+            key_angle,
+        )
         self.food_sources = food_sources
 
     def __init__(
-    self,
-    size: Tuple[float, float] = (300, 300),
-    friction: Tuple[float, float, float] = (1, 0.005, 0.0001),
-    num_sensors: int = 4,
-    odor_source: np.ndarray = np.array([[10, 0, 0]]),
-    peak_intensity: np.ndarray = np.array([[1]]),
-    odor_valence: np.ndarray = np.array([[0]]),
-    diffuse_func: Callable = lambda x: x**-2,
-    marker_colors: Optional[List[Tuple[float, float, float, float]]] = None,
-    marker_size: float = 0.25,
-    key_angle: bool = False,
+        self,
+        size: Tuple[float, float] = (300, 300),
+        friction: Tuple[float, float, float] = (1, 0.005, 0.0001),
+        num_sensors: int = 4,
+        odor_source: np.ndarray = np.array([[10, 0, 0]]),
+        peak_intensity: np.ndarray = np.array([[1]]),
+        odor_valence: np.ndarray = np.array([[0]]),
+        diffuse_func: Callable = lambda x: x**-2,
+        marker_colors: Optional[List[Tuple[float, float, float, float]]] = None,
+        marker_size: float = 0.25,
+        key_angle: bool = False,
     ):
         """Second initializer with separate position, intensity and valence variable lists."""
-        super().__init__(size, friction, num_sensors, 
-                       odor_source, 
-                       peak_intensity,
-                       odor_valence,
-                       diffuse_func, marker_colors, marker_size, key_angle
-                       )
-        self.food_sources = [FoodSource(position, intensity, valence) for position, intensity, valence in zip(odor_source, peak_intensity, odor_valence)]
-
-        
+        super().__init__(
+            size,
+            friction,
+            num_sensors,
+            odor_source,
+            peak_intensity,
+            odor_valence,
+            diffuse_func,
+            marker_colors,
+            marker_size,
+            key_angle,
+        )
+        self.food_sources = [
+            FoodSource(position, intensity, valence)
+            for position, intensity, valence in zip(
+                odor_source, peak_intensity, odor_valence
+            )
+        ]
