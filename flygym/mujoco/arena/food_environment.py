@@ -73,7 +73,7 @@ class OdorArenaEnriched(OdorArena):
         )
         self.food_sources = food_sources
 
-    def __init__(
+    def init(
         self,
         size: Tuple[float, float] = (300, 300),
         friction: Tuple[float, float, float] = (1, 0.005, 0.0001),
