@@ -100,6 +100,7 @@ class OdorArenaEnriched(OdorArena):
 
     def add_source(self, new_source):
         self.food_sources.append(new_source)
+        self.peak_odor_intensity = np.vstack([self.peak_odor_intensity, new_source.peak_intensity])
 
     def consume(self, source_index):
         self.food_sources[source_index].consume()
