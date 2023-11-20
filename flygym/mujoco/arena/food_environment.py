@@ -59,7 +59,6 @@ class OdorArenaEnriched(OdorArena):
         marker_size: float = 0.25,
         key_angle: bool = False,
     ):
-<<<<<<< HEAD
         """
         Initializer allowing addition of food sources in two ways :
         - by giving a list of the food sources initialized through the FoodSource class
@@ -92,7 +91,6 @@ class OdorArenaEnriched(OdorArena):
                         diffuse_func, marker_colors, marker_size, key_angle
                         )
             self.food_sources = [FoodSource(position, intensity, valence) for position, intensity, valence in zip(odor_source, peak_intensity, odor_valence)]
-=======
         """First initializer with list of food sources."""
         super().__init__(
             size,
@@ -129,7 +127,6 @@ class OdorArenaEnriched(OdorArena):
                        diffuse_func, marker_colors, marker_size, key_angle
                        )
         self.food_sources = [FoodSource(position, intensity, valence) for position, intensity, valence in zip(odor_source, peak_intensity, odor_valence)]
->>>>>>> 13a4463f661891011895b38c229a448d60d856cd
 
     def move_source(self, source_index, new_pos):
         self.food_sources[source_index].move_source(new_pos)
