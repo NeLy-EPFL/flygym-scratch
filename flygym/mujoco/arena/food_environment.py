@@ -89,4 +89,11 @@ class OdorArenaEnriched(OdorArena):
                        )
         self.food_sources = [FoodSource(position, intensity, valence) for position, intensity, valence in zip(odor_source, peak_intensity, odor_valence)]
 
-        
+    def move_source(self, source_index, new_pos):
+        self.food_sources[source_index].move_source(new_pos)
+
+    def add_source(self, new_source):
+        self.food_sources.append(new_source)
+
+    def consume(self, source_index):
+        self.food_sources[source_index].consume()
