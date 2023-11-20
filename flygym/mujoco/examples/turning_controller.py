@@ -2,11 +2,16 @@ import numpy as np
 from tqdm import trange
 from gymnasium import spaces
 from gymnasium.utils.env_checker import check_env
-from typing import Dict
+from typing import Dict, Union
+import cv2
+import matplotlib.pyplot as plt
 
 from flygym.mujoco import Parameters, NeuroMechFly
 from flygym.mujoco.examples.common import PreprogrammedSteps
 from flygym.mujoco.examples.cpg_controller import CPGNetwork
+from dm_control import mjcf
+
+from flygym.mujoco.arena.food_environment import OdorArenaEnriched
 
 
 _tripod_phase_biases = np.pi * np.array(
@@ -186,6 +191,67 @@ class HybridTurningNMF(NeuroMechFly):
         self.retraction_correction = np.zeros(6)
         self.stumbling_correction = np.zeros(6)
         return obs, info
+    
+    def render(self) -> Union[np.ndarray, None]:
+        """Call the ``render`` method to update the renderer. It should be
+        called every iteration; the method will decide by itself whether
+        action is required.
+
+        Returns
+        -------
+        np.ndarray
+            The rendered image is one is rendered.
+        """
+        if self.render_mode == "headless":
+            return None
+        if self.curr_time < len(self._frames) * self._eff_render_interval:
+            return None
+        if self.render_mode == "saved":
+            width, height = self.sim_params.render_window_size
+            camera = self.sim_params.render_camera
+            if self.update_camera_pos:
+                self._update_cam_pos()
+            if self.sim_params.camera_follows_fly_orientation:
+                self._update_cam_rot()
+            if self.sim_params.draw_adhesion:
+                self._draw_adhesion()
+            if self.sim_params.align_camera_with_gravity:
+                self._rotate_camera()
+            self.physics = mjcf.Physics.from_mjcf_model(self.arena_root)
+            img = self.physics.render(width=width, height=height, camera_id=camera)
+            img = img.copy()
+            if self.sim_params.draw_contacts:
+                img = self._draw_contacts(img)
+            if self.sim_params.draw_gravity:
+                img = self._draw_gravity(img)
+
+            render_playspeed_text = self.sim_params.render_playspeed_text
+            render_time_text = self.sim_params.render_timestamp_text
+            if render_playspeed_text or render_time_text:
+                if render_playspeed_text and render_time_text:
+                    text = (
+                        f"{self.curr_time:.2f}s ({self.sim_params.render_playspeed}x)"
+                    )
+                elif render_playspeed_text:
+                    text = f"{self.sim_params.render_playspeed}x"
+                elif render_time_text:
+                    text = f"{self.curr_time:.2f}s"
+                img = cv2.putText(
+                    img,
+                    text,
+                    org=(20, 30),
+                    fontFace=cv2.FONT_HERSHEY_DUPLEX,
+                    fontScale=0.8,
+                    color=(0, 0, 0),
+                    lineType=cv2.LINE_AA,
+                    thickness=1,
+                )
+
+            self._frames.append(img)
+            self._last_render_time = self.curr_time
+            return self._frames[-1]
+        else:
+            raise NotImplementedError
 
     def step(self, action, truncation=True, angle_key=False):
         """Step the simulation forward one timestep.
@@ -255,6 +321,15 @@ class HybridTurningNMF(NeuroMechFly):
         }
         return super().step(action, truncation, angle_key)
 
+    def add_source(self, new_source):
+        if isinstance(self.arena, OdorArenaEnriched):
+            self.arena.add_source(new_source)
+            marker_body = self.arena_root.worldbody.add(
+                "body", name=f"odor_source_marker_{len(self.arena.food_sources)-1}", pos=new_source.position, mocap=True
+            )
+            marker_body.add(
+                "geom", type="capsule", size=(self.arena.marker_size, self.arena.marker_size), rgba=new_source.marker_color
+                )
 
 if __name__ == "__main__":
     run_time = 2
