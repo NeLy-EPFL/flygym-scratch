@@ -87,21 +87,19 @@ class OdorArenaEnriched(OdorArena):
         key_angle: bool = False,
     ):
         """Second initializer with separate position, intensity and valence variable lists."""
-        super().__init__(
-            size,
-            friction,
-            num_sensors,
-            odor_source,
-            peak_intensity,
-            odor_valence,
-            diffuse_func,
-            marker_colors,
-            marker_size,
-            key_angle,
-        )
-        self.food_sources = [
-            FoodSource(position, intensity, valence)
-            for position, intensity, valence in zip(
-                odor_source, peak_intensity, odor_valence
-            )
-        ]
+        super().__init__(size, friction, num_sensors, 
+                       odor_source, 
+                       peak_intensity,
+                       odor_valence,
+                       diffuse_func, marker_colors, marker_size, key_angle
+                       )
+        self.food_sources = [FoodSource(position, intensity, valence) for position, intensity, valence in zip(odor_source, peak_intensity, odor_valence)]
+
+    def move_source(self, source_index, new_pos):
+        self.food_sources[source_index].move_source(new_pos)
+
+    def add_source(self, new_source):
+        self.food_sources.append(new_source)
+
+    def consume(self, source_index):
+        self.food_sources[source_index].consume()

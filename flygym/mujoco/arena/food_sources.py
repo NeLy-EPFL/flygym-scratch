@@ -14,6 +14,8 @@ class FoodSource:
     odor_valence : float
         The valence that is associated to the smell of the source in a learning and
         memory context.
+    stock : int
+        The number of times the fly can still visit the source before its stock runs out.
 
     Parameters
     ----------
@@ -25,20 +27,31 @@ class FoodSource:
         The valence that is associated to the smell of the source in a learning and memory
         context. Can be multidimensional if there are multiple different food types.
         By default it is [0].
+    stock : int, optional
+        The number of times the fly can still visit the source before its stock runs out. By 
+        default it is 5.
     """
 
     def __init__(
-        self,
-        position: np.ndarray = np.array([10, 0, 0]),
-        peak_intensity: np.ndarray = np.array([1]),
-        odor_valence: float = 0.0,
+            self, 
+            position : np.ndarray = np.array([10, 0, 0]),
+            peak_intensity : np.ndarray = np.array([1]),
+            odor_valence: float = 0.0,
+            stock: int = 5
     ):
         self.position = position
         self.peak_intensity = peak_intensity
         self.odor_valence = odor_valence
+        self.stock = stock
 
     def get_odor_dimension(self):
         return self.peak_intensity.shape[0]
 
     def get_valence_dimension(self):
         return self.odor_valence.shape[0]
+    
+    def move_source(self, new_position):
+        self.position = new_position
+
+    def consume(self):
+        self.stock -= 1
