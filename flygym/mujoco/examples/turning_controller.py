@@ -253,7 +253,7 @@ class HybridTurningNMF(NeuroMechFly):
         else:
             raise NotImplementedError
 
-    def step(self, action, truncation=True, angle_key=False):
+    def step(self, action, truncation=True, angle_key=False, food_source=False):
         """Step the simulation forward one timestep.
 
         Parameters
@@ -319,7 +319,7 @@ class HybridTurningNMF(NeuroMechFly):
             "joints": np.array(np.concatenate(joints_angles)),
             "adhesion": np.array(adhesion_onoff).astype(int),
         }
-        return super().step(action, truncation, angle_key)
+        return super().step(action, truncation, angle_key, food_source)
 
     def add_source(self, new_source):
         if isinstance(self.arena, OdorArenaEnriched):

@@ -1328,7 +1328,7 @@ class NeuroMechFly(gym.Env):
         return self.get_observation(), self.get_info()
 
     def step(
-        self, action: ObsType, truncation=True, angle_key=False
+        self, action: ObsType, truncation=True, angle_key=False, food_source = False
     ) -> Tuple[ObsType, float, bool, bool, Dict[str, Any]]:
         """Step the Gym environment.
 
@@ -1372,7 +1372,7 @@ class NeuroMechFly(gym.Env):
         self.curr_time += self.timestep
         self.elapsed_time += self.timestep
         observation = self.get_observation()
-        reward = self.get_reward(observation, angle_key)
+        reward = self.get_reward(observation, angle_key, food_source)
         terminated = self.is_terminated()
         truncated = self.is_truncated(observation, truncation)
         self.food_stocked_curr -= self.food_loss_rate
@@ -1855,7 +1855,7 @@ class NeuroMechFly(gym.Env):
 
         return obs
 
-    def get_reward(self, obs, angle_key) -> float:
+    def get_reward(self, obs, angle_key, food_source) -> float:
         """
         Get the reward for the current state of the environment
         once the fly is closed enough to the odor source
@@ -1867,30 +1867,42 @@ class NeuroMechFly(gym.Env):
         angle_key : bool
             Whether the fly receives the reward associated to the food source
             (angle_key = False) or to the smell (angle_key = True)
+        food_source : bool
+            Whether the arena is an OdorArenaEnriched or an OdorArena
 
         Returns
         -------
         reward: float
             The reward
         """
-
-        for i in range(len(self.arena.odor_source)):
-            # if fly is within 2mm of the attractive/aversive odor source
-            if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) < 2:
-                # the fly gets the reward
-                if angle_key:
-                    smell_key_value = self.arena.compute_smell_angle_value(
+        if food_source:
+            for i in range(len(self.arena.food_sources)):
+                if np.linalg.norm(
+                    obs["fly"][0, :2] - self.arena.food_sources[i].position[:2]) < 2:
+                        smell_key_value = self.arena.compute_smell_angle_value(
                         self.arena.peak_odor_intensity[i]
                     )
-                    reward = self.arena.valence_dictionary.get(smell_key_value)
-                    self.fly_valence_dictionary.update(({smell_key_value: reward}))
-                else:
-                    smell_key_value = self.arena.compute_smell_key_value(
-                        self.arena.peak_odor_intensity[i]
-                    )
-                    reward = self.arena.valence_dictionary.get(smell_key_value)
-                    self.fly_valence_dictionary.update(({smell_key_value: reward}))
-                return reward
+                        reward = self.arena.valence_dictionary.get(smell_key_value)
+                        self.fly_valence_dictionary.update(({smell_key_value: reward}))
+                        return reward
+        else:
+            for i in range(len(self.arena.odor_source)):
+                # if fly is within 2mm of the attractive/aversive odor source
+                if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) < 2:
+                    # the fly gets the reward
+                    if angle_key:
+                        smell_key_value = self.arena.compute_smell_angle_value(
+                            self.arena.peak_odor_intensity[i]
+                        )
+                        reward = self.arena.valence_dictionary.get(smell_key_value)
+                        self.fly_valence_dictionary.update(({smell_key_value: reward}))
+                    else:
+                        smell_key_value = self.arena.compute_smell_key_value(
+                            self.arena.peak_odor_intensity[i]
+                        )
+                        reward = self.arena.valence_dictionary.get(smell_key_value)
+                        self.fly_valence_dictionary.update(({smell_key_value: reward}))
+                        return reward
 
     def is_terminated(self):
         """Whether the episode has terminated due to factors that are

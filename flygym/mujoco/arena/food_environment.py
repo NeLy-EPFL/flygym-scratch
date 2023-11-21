@@ -135,7 +135,7 @@ class OdorArenaEnriched(OdorArena):
                 )
             ]
 
-    def move_source(self, source_index, new_pos):
+    def move_source(self, source_index, new_pos=np.empty(0)):
         self.food_sources[source_index].move_source(new_pos)
 
     def add_source(self, new_source):
