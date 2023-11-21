@@ -1328,7 +1328,7 @@ class NeuroMechFly(gym.Env):
         return self.get_observation(), self.get_info()
 
     def step(
-        self, action: ObsType, truncation=True, angle_key=False, food_source = False
+        self, action: ObsType, truncation=True, angle_key=False, food_source=False
     ) -> Tuple[ObsType, float, bool, bool, Dict[str, Any]]:
         """Step the Gym environment.
 
@@ -1343,6 +1343,9 @@ class NeuroMechFly(gym.Env):
             This boolean is used to decide the way the fly receives the reward, meaning
             if the fly receives the reward associated to the source (angle_key = False)
             or to the smell (angle_key = True)
+        food_source : bool
+            Whether the arena is an OdorArenaEnriched or an OdorArena
+
 
         Returns
         -------
@@ -1877,18 +1880,25 @@ class NeuroMechFly(gym.Env):
         """
         if food_source:
             for i in range(len(self.arena.food_sources)):
-                if np.linalg.norm(
-                    obs["fly"][0, :2] - self.arena.food_sources[i].position[:2]) < 2:
-                        smell_key_value = self.arena.compute_smell_angle_value(
+                if (
+                    np.linalg.norm(
+                        obs["fly"][0, :2] - self.arena.food_sources[i].position[:2]
+                    )
+                    < 2
+                ):
+                    smell_key_value = self.arena.compute_smell_angle_value(
                         self.arena.peak_odor_intensity[i]
                     )
-                        reward = self.arena.valence_dictionary.get(smell_key_value)
-                        self.fly_valence_dictionary.update(({smell_key_value: reward}))
-                        return reward
+                    reward = self.arena.valence_dictionary.get(smell_key_value)
+                    self.fly_valence_dictionary.update(({smell_key_value: reward}))
+                    return reward
         else:
             for i in range(len(self.arena.odor_source)):
                 # if fly is within 2mm of the attractive/aversive odor source
-                if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) < 2:
+                if (
+                    np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2])
+                    < 2
+                ):
                     # the fly gets the reward
                     if angle_key:
                         smell_key_value = self.arena.compute_smell_angle_value(
@@ -2137,6 +2147,8 @@ class NeuroMechFly(gym.Env):
         ----------
         obs: ObsType
             The observation as defined by the environment.
+        food_source : bool
+            Whether the arena is an OdorArenaEnriched or an OdorArena
 
         Returns
         -------
@@ -2362,34 +2374,24 @@ class NeuroMechFly(gym.Env):
         else:
             return False
 
-    def add_new_source(self):
-        x = random.uniform(0.0, 1.0)
-        if x > 0:
-            x_pos, y_pos = np.random.randint(0, 50, 2)
-            peak_intensity_x, peak_intensity_y = np.random.randint(0, 10, 2)
-            odor_valence = self.compute_new_valence(peak_intensity_x, peak_intensity_y)
-            odor_key = self.arena.compute_smell_angle_value(
-                np.array([peak_intensity_x, peak_intensity_y])
-            )
-            new_source = FoodSource(
-                [x_pos, y_pos, 1.5],
-                [peak_intensity_x, peak_intensity_y],
-                round(odor_valence),
-                change_rgba(
-                    [
-                        np.random.randint(255),
-                        np.random.randint(255),
-                        np.random.randint(255),
-                        1,
-                    ]
-                ),
-            )
-            self.arena.add_source(new_source)
-            self.arena.valence_dictionary[odor_key] = round(odor_valence)
-            self.fly_valence_dictionary[odor_key] = round(odor_valence)
-            self.key_odor_scores[odor_key] = round(odor_valence)
+    def compute_new_valence(self, peak_intensity_x, peak_intensity_y) -> float:
+        """
+        This method is used to compute the valence of a new food source added later during the simulation to the arena.
+        The new valence is computed using the cosine similarity with the other sources already presented on the arena.
+        If a negative valence is computed, its value is set to 0.
 
-    def compute_new_valence(self, peak_intensity_x, peak_intensity_y):
+        Parameters
+        ----------
+        peak_intensity_x: float
+            The peak intensity of the new source along the x axis
+        peak_intensity_y: float
+            The peak intensity of the new source along the y axis
+
+        Returns
+        -------
+        confidence_level: float
+            the computed valence of the new food source
+        """
         confidence_level = 0
         peak_intensity = np.array([peak_intensity_x, peak_intensity_y])
         normalized_peak_intensity = self.arena.normalize_peak_intensity(peak_intensity)

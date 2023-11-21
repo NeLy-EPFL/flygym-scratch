@@ -5,7 +5,10 @@ from gymnasium.utils.env_checker import check_env
 from typing import Dict, Union
 import cv2
 import matplotlib.pyplot as plt
+import random
 
+from flygym.mujoco.arena.food_sources import FoodSource
+from flygym.mujoco.arena import change_rgba
 from flygym.mujoco import Parameters, NeuroMechFly
 from flygym.mujoco.examples.common import PreprogrammedSteps
 from flygym.mujoco.examples.cpg_controller import CPGNetwork
@@ -261,6 +264,15 @@ class HybridTurningNMF(NeuroMechFly):
         action : np.ndarray
             Array of shape (2,) containing descending signal encoding
             turning.
+        truncation : bool
+            This boolean value is used to decide whether we want to truncate
+            the simulatio if certain time conditions are satisfied
+        angle_key : bool
+            This boolean is used to decide the way the fly receives the reward, meaning
+            if the fly receives the reward associated to the source (angle_key = False)
+            or to the smell (angle_key = True)
+        food_source : bool
+            Whether the arena is an OdorArenaEnriched or an OdorArena
         """
         # update CPG parameters
         amps = np.repeat(np.abs(action[:, np.newaxis]), 3, axis=1).flatten()
@@ -321,21 +333,56 @@ class HybridTurningNMF(NeuroMechFly):
         }
         return super().step(action, truncation, angle_key, food_source)
 
-    def add_source(self, new_source):
+    def add_source(self):
+        """ "
+        This method is used when a new food source needs to be added to the current arena.
+        The food source position, peak_intensity are randomly generated while the valence of the new
+        food source is computed using the cosine similarity.
+        Later, all the dictionaries of both the arena and the fly are updated.
+        In order to decide if to add a new source the arena, a random number is generated and
+        if it is higher than a certain treshold a new source is added to the arena.
+        """
         if isinstance(self.arena, OdorArenaEnriched):
-            self.arena.add_source(new_source)
-            marker_body = self.arena_root.worldbody.add(
-                "body",
-                name=f"odor_source_marker_{len(self.arena.food_sources)-1}",
-                pos=new_source.position,
-                mocap=True,
-            )
-            marker_body.add(
-                "geom",
-                type="capsule",
-                size=(self.arena.marker_size, self.arena.marker_size),
-                rgba=new_source.marker_color,
-            )
+            x = random.uniform(0.0, 1.0)
+            if x > 0:
+                x_pos, y_pos = np.random.randint(0, 50, 2)
+                peak_intensity_x, peak_intensity_y = np.random.randint(0, 10, 2)
+                odor_valence = self.compute_new_valence(
+                    peak_intensity_x, peak_intensity_y
+                )
+                odor_key = self.arena.compute_smell_angle_value(
+                    np.array([peak_intensity_x, peak_intensity_y])
+                )
+                new_source = FoodSource(
+                    [x_pos, y_pos, 1.5],
+                    [peak_intensity_x, peak_intensity_y],
+                    round(odor_valence),
+                    change_rgba(
+                        [
+                            np.random.randint(255),
+                            np.random.randint(255),
+                            np.random.randint(255),
+                            1,
+                        ]
+                    ),
+                )
+                self.arena.add_source(new_source)
+                self.arena.valence_dictionary[odor_key] = round(odor_valence)
+                self.fly_valence_dictionary[odor_key] = round(odor_valence)
+                self.key_odor_scores[odor_key] = round(odor_valence)
+                self.arena.add_source(new_source)
+                marker_body = self.arena_root.worldbody.add(
+                    "body",
+                    name=f"odor_source_marker_{len(self.arena.food_sources)-1}",
+                    pos=new_source.position,
+                    mocap=True,
+                )
+                marker_body.add(
+                    "geom",
+                    type="capsule",
+                    size=(self.arena.marker_size, self.arena.marker_size),
+                    rgba=new_source.marker_color,
+                )
 
 
 if __name__ == "__main__":

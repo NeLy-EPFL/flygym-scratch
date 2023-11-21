@@ -712,7 +712,7 @@ class OdorArena(BaseArena):
         """
         return self.peak_odor_intensity
 
-    def compute_richest_closest_source(self, obs) -> float:
+    def compute_richest_closest_source(self, obs, food_source=False) -> float:
         """
         This method is used to compute the closest source to the fly that has the highest reward.
         A reward can be shared between different sources of the same smell.
@@ -723,10 +723,13 @@ class OdorArena(BaseArena):
         ----------
         obs: ObsType
             The observation as defined by the environment.
+        food_source : bool
+            Whether the arena is a OdorArenaEnriched or not.
 
         Returns
         -------
-        source index
+        index_source : float
+            the index of the richest closest source
 
         """
         max_key = max(self.valence_dictionary, key=self.valence_dictionary.get)
@@ -736,9 +739,20 @@ class OdorArena(BaseArena):
                 possible_sources.append(el)
         distance = np.inf
         index_source = 0
-        for i in possible_sources:
-            tmp_distance = np.linalg.norm(obs["fly"][0, :2] - self.odor_source[i, :2])
-            if tmp_distance < distance:
-                distance = tmp_distance
-                index_source = i
+        if food_source:
+            for i in possible_sources:
+                tmp_distance = np.linalg.norm(
+                    obs["fly"][0, :2] - self.arena.food_sources[i].position[:2]
+                )
+                if tmp_distance < distance:
+                    distance = tmp_distance
+                    index_source = i
+        else:
+            for i in possible_sources:
+                tmp_distance = np.linalg.norm(
+                    obs["fly"][0, :2] - self.odor_source[i, :2]
+                )
+                if tmp_distance < distance:
+                    distance = tmp_distance
+                    index_source = i
         return index_source
