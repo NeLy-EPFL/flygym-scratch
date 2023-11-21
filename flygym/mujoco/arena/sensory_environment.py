@@ -618,7 +618,7 @@ class OdorArena(BaseArena):
         _odor_source_repeated = np.repeat(
             _odor_source_repeated, self.num_sensors, axis=2
         )
-        
+
         peak_odor_intesity = self.peak_odor_intensity[index_source]
         peak_odor_intesity = np.expand_dims(peak_odor_intesity, axis=0)
         _peak_intensity_repeated = peak_odor_intesity[:, :, np.newaxis]

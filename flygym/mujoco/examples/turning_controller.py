@@ -191,7 +191,7 @@ class HybridTurningNMF(NeuroMechFly):
         self.retraction_correction = np.zeros(6)
         self.stumbling_correction = np.zeros(6)
         return obs, info
-    
+
     def render(self) -> Union[np.ndarray, None]:
         """Call the ``render`` method to update the renderer. It should be
         called every iteration; the method will decide by itself whether
@@ -325,11 +325,18 @@ class HybridTurningNMF(NeuroMechFly):
         if isinstance(self.arena, OdorArenaEnriched):
             self.arena.add_source(new_source)
             marker_body = self.arena_root.worldbody.add(
-                "body", name=f"odor_source_marker_{len(self.arena.food_sources)-1}", pos=new_source.position, mocap=True
+                "body",
+                name=f"odor_source_marker_{len(self.arena.food_sources)-1}",
+                pos=new_source.position,
+                mocap=True,
             )
             marker_body.add(
-                "geom", type="capsule", size=(self.arena.marker_size, self.arena.marker_size), rgba=new_source.marker_color
-                )
+                "geom",
+                type="capsule",
+                size=(self.arena.marker_size, self.arena.marker_size),
+                rgba=new_source.marker_color,
+            )
+
 
 if __name__ == "__main__":
     run_time = 2

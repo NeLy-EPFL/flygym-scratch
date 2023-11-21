@@ -11,12 +11,14 @@ from .sensory_environment import OdorArena
 
 logging.basicConfig(level=logging.INFO)
 
+
 def change_rgba(rgba):
     temp = []
     for i in range(3):
-        temp.append(rgba[i]/256)
+        temp.append(rgba[i] / 256)
     temp.append(rgba[3])
     return temp
+
 
 class OdorArenaEnriched(OdorArena):
     """Flat terrain with food sources.
@@ -70,12 +72,34 @@ class OdorArenaEnriched(OdorArena):
         - by giving a list of the food sources initialized through the FoodSource class
         - by giving the food sources' variables directly
         """
-        if((food_sources is None) and (any([odor_source is None, peak_intensity is None, odor_valence is None, marker_colors is None]))):
-            raise ValueError("OdorArenaEnriched has to be initialized with either food source list or individual arrays of the food sources' variables, cannot both be None.")
-        if((food_sources is not None) and (all([odor_source is not None, peak_intensity is not None, odor_valence is not None, marker_colors is None]))):
-            raise ValueError("OdorArenaEnriched has to be initialized with either food source list or individual arrays of the food sources' variables, not both.")
-        
-        if(food_sources is not None):
+        if (food_sources is None) and (
+            any(
+                [
+                    odor_source is None,
+                    peak_intensity is None,
+                    odor_valence is None,
+                    marker_colors is None,
+                ]
+            )
+        ):
+            raise ValueError(
+                "OdorArenaEnriched has to be initialized with either food source list or individual arrays of the food sources' variables, cannot both be None."
+            )
+        if (food_sources is not None) and (
+            all(
+                [
+                    odor_source is not None,
+                    peak_intensity is not None,
+                    odor_valence is not None,
+                    marker_colors is None,
+                ]
+            )
+        ):
+            raise ValueError(
+                "OdorArenaEnriched has to be initialized with either food source list or individual arrays of the food sources' variables, not both."
+            )
+
+        if food_sources is not None:
             super().__init__(
                 size,
                 friction,
@@ -91,14 +115,25 @@ class OdorArenaEnriched(OdorArena):
             self.marker_size = marker_size
             self.food_sources = food_sources
         else:
-            super().__init__(size, friction, num_sensors, 
-                        odor_source, 
-                        peak_intensity,
-                        odor_valence,
-                        diffuse_func, marker_colors, marker_size, key_angle
-                        )
+            super().__init__(
+                size,
+                friction,
+                num_sensors,
+                odor_source,
+                peak_intensity,
+                odor_valence,
+                diffuse_func,
+                marker_colors,
+                marker_size,
+                key_angle,
+            )
             self.marker_size = marker_size
-            self.food_sources = [FoodSource(position, intensity, valence) for position, intensity, valence in zip(odor_source, peak_intensity, odor_valence)]
+            self.food_sources = [
+                FoodSource(position, intensity, valence)
+                for position, intensity, valence in zip(
+                    odor_source, peak_intensity, odor_valence
+                )
+            ]
 
     def move_source(self, source_index, new_pos):
         self.food_sources[source_index].move_source(new_pos)
@@ -106,8 +141,12 @@ class OdorArenaEnriched(OdorArena):
     def add_source(self, new_source):
         self.food_sources.append(new_source)
         self.odor_source = np.array([source.position for source in self.food_sources])
-        self.peak_odor_intensity = np.array([source.peak_intensity for source in self.food_sources])
-        self.odor_valence = np.array([source.odor_valence for source in self.food_sources])
+        self.peak_odor_intensity = np.array(
+            [source.peak_intensity for source in self.food_sources]
+        )
+        self.odor_valence = np.array(
+            [source.odor_valence for source in self.food_sources]
+        )
 
     def consume(self, source_index):
         self.food_sources[source_index].consume()

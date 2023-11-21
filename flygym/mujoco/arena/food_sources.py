@@ -32,17 +32,17 @@ class FoodSource:
     marker_color : 4D np.ndarray, optional
         The RGBA color of the source on the image frames. By default it is [255, 0, 0, 1]
     stock : int, optional
-        The number of times the fly can still visit the source before its stock runs out. By 
+        The number of times the fly can still visit the source before its stock runs out. By
         default it is 5.
     """
 
     def __init__(
-            self, 
-            position : np.ndarray = np.array([10, 0, 0]),
-            peak_intensity : np.ndarray = np.array([1]),
-            odor_valence: float = 0.0,
-            marker_color: np.ndarray = np.array([255, 0, 0, 1]),
-            stock: int = 5
+        self,
+        position: np.ndarray = np.array([10, 0, 0]),
+        peak_intensity: np.ndarray = np.array([1]),
+        odor_valence: float = 0.0,
+        marker_color: np.ndarray = np.array([255, 0, 0, 1]),
+        stock: int = 5,
     ):
         self.position = position
         self.peak_intensity = peak_intensity
@@ -55,17 +55,17 @@ class FoodSource:
 
     def get_valence_dimension(self):
         return self.odor_valence.shape[0]
-    
+
     def move_source(self, new_position):
         self.position = new_position
 
-    def move_source_update(self, new_pos = np.empty(0)):
+    def move_source_update(self, new_pos=np.empty(0)):
         self.stock -= 1
         if self.stock == 0:
             self.stock = 5
             if np.shape(new_pos) == 0:
                 x_pos, y_pos = np.random.randint(0, 50, 2)
-                new_pos = [x_pos, y_pos , 1.5]
+                new_pos = [x_pos, y_pos, 1.5]
                 self.position = new_pos
             else:
                 self.position = new_pos
