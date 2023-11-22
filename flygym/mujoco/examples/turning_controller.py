@@ -252,7 +252,7 @@ class HybridTurningNMF(NeuroMechFly):
             return self._frames[-1]
         else:
             raise NotImplementedError
-
+    
     def step(self, action, truncation=True, angle_key=False):
         """Step the simulation forward one timestep.
 
@@ -322,8 +322,12 @@ class HybridTurningNMF(NeuroMechFly):
         return super().step(action, truncation, angle_key)
 
     def add_source(self, new_source):
+        """Adds a new food source to the environment and updates everything accordingly."""
         if isinstance(self.arena, OdorArenaEnriched):
             self.arena.add_source(new_source)
+            smell_key_value = self.arena.compute_smell_angle_value(new_source.peak_intensity)
+            if smell_key_value not in self.key_odor_scores.keys():
+                self.key_odor_scores.update({smell_key_value: 0})
             marker_body = self.arena_root.worldbody.add(
                 "body", name=f"odor_source_marker_{len(self.arena.food_sources)-1}", pos=new_source.position, mocap=True
             )
