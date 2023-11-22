@@ -32,17 +32,17 @@ class FoodSource:
     marker_color : 4D np.ndarray, optional
         The RGBA color of the source on the image frames. By default it is [255, 0, 0, 1]
     stock : int, optional
-        The number of times the fly can still visit the source before its stock runs out. By 
+        The number of times the fly can still visit the source before its stock runs out. By
         default it is 5.
     """
 
     def __init__(
-            self, 
-            position : np.ndarray = np.array([10, 0, 0]),
-            peak_intensity : np.ndarray = np.array([1]),
-            odor_valence: float = 0.0,
-            marker_color: np.ndarray = np.array([255, 0, 0, 1]),
-            stock: int = 5
+        self,
+        position: np.ndarray = np.array([10, 0, 0]),
+        peak_intensity: np.ndarray = np.array([1]),
+        odor_valence: float = 0.0,
+        marker_color: np.ndarray = np.array([255, 0, 0, 1]),
+        stock: int = 5,
     ):
         self.position = position
         self.peak_intensity = peak_intensity
@@ -50,14 +50,30 @@ class FoodSource:
         self.marker_color = marker_color
         self.stock = stock
 
-    def get_odor_dimension(self):
-        return self.peak_intensity.shape[0]
+    def move_source(self, new_pos=np.empty(0)) -> None:
+        """
+        This method is used to move the food source in the OdorArenaEnriched.
+        If the fly has already visited the source more than a certain treshold (here 5)
+        the food source is moved to a new position, representing a new
+        source of the same food.
 
-    def get_valence_dimension(self):
-        return self.odor_valence.shape[0]
-    
-    def move_source(self, new_position):
-        self.position = new_position
+        Parameters
+        new_pos : array
+            The new position of the food source
+        """
+        self.consume()
+        if self.stock == 0:
+            self.stock = 5
+            if np.shape(new_pos) == (0,):
+                x_pos, y_pos = np.random.randint(0, 50, 2)
+                new_pos = [x_pos, y_pos, 1.5]
+                self.position = new_pos
+            else:
+                self.position = new_pos
 
-    def consume(self):
+    def consume(self) -> None:
+        """
+        Everytime the fly approaches a food source, the source's stock decreases
+        (the fly eats the food decreasing its available quantity).
+        """
         self.stock -= 1

@@ -5,7 +5,10 @@ from gymnasium.utils.env_checker import check_env
 from typing import Dict, Union
 import cv2
 import matplotlib.pyplot as plt
+import random
 
+from flygym.mujoco.arena.food_sources import FoodSource
+from flygym.mujoco.arena import change_rgba
 from flygym.mujoco import Parameters, NeuroMechFly
 from flygym.mujoco.examples.common import PreprogrammedSteps
 from flygym.mujoco.examples.cpg_controller import CPGNetwork
@@ -191,7 +194,7 @@ class HybridTurningNMF(NeuroMechFly):
         self.retraction_correction = np.zeros(6)
         self.stumbling_correction = np.zeros(6)
         return obs, info
-    
+
     def render(self) -> Union[np.ndarray, None]:
         """Call the ``render`` method to update the renderer. It should be
         called every iteration; the method will decide by itself whether
@@ -252,8 +255,13 @@ class HybridTurningNMF(NeuroMechFly):
             return self._frames[-1]
         else:
             raise NotImplementedError
+<<<<<<< HEAD
     
     def step(self, action, truncation=True, angle_key=False):
+=======
+
+    def step(self, action, truncation=True, angle_key=False, food_source=False):
+>>>>>>> 88dc7d164a1af3a7edd7559dd88d85a34e24a623
         """Step the simulation forward one timestep.
 
         Parameters
@@ -261,6 +269,15 @@ class HybridTurningNMF(NeuroMechFly):
         action : np.ndarray
             Array of shape (2,) containing descending signal encoding
             turning.
+        truncation : bool
+            This boolean value is used to decide whether we want to truncate
+            the simulatio if certain time conditions are satisfied
+        angle_key : bool
+            This boolean is used to decide the way the fly receives the reward, meaning
+            if the fly receives the reward associated to the source (angle_key = False)
+            or to the smell (angle_key = True)
+        food_source : bool
+            Whether the arena is an OdorArenaEnriched or an OdorArena
         """
         # update CPG parameters
         amps = np.repeat(np.abs(action[:, np.newaxis]), 3, axis=1).flatten()
@@ -319,8 +336,9 @@ class HybridTurningNMF(NeuroMechFly):
             "joints": np.array(np.concatenate(joints_angles)),
             "adhesion": np.array(adhesion_onoff).astype(int),
         }
-        return super().step(action, truncation, angle_key)
+        return super().step(action, truncation, angle_key, food_source)
 
+<<<<<<< HEAD
     def add_source(self, new_source):
         """Adds a new food source to the environment and updates everything accordingly."""
         if isinstance(self.arena, OdorArenaEnriched):
@@ -333,7 +351,59 @@ class HybridTurningNMF(NeuroMechFly):
             )
             marker_body.add(
                 "geom", type="capsule", size=(self.arena.marker_size, self.arena.marker_size), rgba=new_source.marker_color
+=======
+    def add_source(self):
+        """ 
+        This method is used when a new food source needs to be added to the current OdorArenaEnriched.
+        The food source position, peak_intensity are randomly generated while the valence of the new
+        food source is computed using the cosine similarity.
+        Later, all the dictionaries of both the arena and the fly are updated.
+        In order to decide if to add a new source the arena, a random number is generated and
+        if it is higher than a certain treshold a new source is added to the arena.
+        """
+        if isinstance(self.arena, OdorArenaEnriched):
+            x = random.uniform(0.0, 1.0)
+            if x > 0:
+                x_pos, y_pos = np.random.randint(0, 30, 2)
+                peak_intensity_x, peak_intensity_y = np.random.randint(2, 10, 2)
+                odor_valence = self.compute_new_valence(
+                    peak_intensity_x, peak_intensity_y
+>>>>>>> 88dc7d164a1af3a7edd7559dd88d85a34e24a623
                 )
+                odor_key = self.arena.compute_smell_angle_value(
+                    np.array([peak_intensity_x, peak_intensity_y])
+                )
+                new_source = FoodSource(
+                    [x_pos, y_pos, 1.5],
+                    [peak_intensity_x, peak_intensity_y],
+                    round(odor_valence),
+                    change_rgba(
+                        [
+                            np.random.randint(255),
+                            np.random.randint(255),
+                            np.random.randint(255),
+                            1,
+                        ]
+                    ),
+                )
+                self.arena.valence_dictionary[odor_key] = round(odor_valence)
+                self.fly_valence_dictionary[odor_key] = round(odor_valence)
+                self.key_odor_scores[odor_key] = round(odor_valence)
+                self.arena.add_source(new_source)
+                marker_body = self.arena_root.worldbody.add(
+                    "body",
+                    name=f"odor_source_marker_{len(self.arena.food_sources)-1}",
+                    pos=new_source.position,
+                    mocap=True,
+                )
+                marker_body.add(
+                    "geom",
+                    type="capsule",
+                    size=(self.arena.marker_size, self.arena.marker_size),
+                    rgba=new_source.marker_color,
+                )
+                print(self.arena.valence_dictionary, self.fly_valence_dictionary, self.key_odor_scores)
+
 
 if __name__ == "__main__":
     run_time = 2

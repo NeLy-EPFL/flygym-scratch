@@ -602,7 +602,7 @@ class OdorArena(BaseArena):
             if max_key == self.compute_smell_key_value(self.peak_odor_intensity[el]):
                 return el
 
-    def get_specific_olfaction(self, index_source, sim, peak_intensity):
+    def get_specific_olfaction(self, index_source, sim):
         """
         This function is needed when the fly wants
         to reach a specific source.
@@ -618,24 +618,14 @@ class OdorArena(BaseArena):
         _odor_source_repeated = np.repeat(
             _odor_source_repeated, self.num_sensors, axis=2
         )
-        if np.shape(peak_intensity) == 0:
-            peak_intensity = self.peak_odor_intensity
 
-            peak_odor_intesity = peak_intensity[index_source]
-            peak_odor_intesity = np.expand_dims(peak_odor_intesity, axis=0)
-            _peak_intensity_repeated = peak_odor_intesity[:, :, np.newaxis]
-            _peak_intensity_repeated = np.repeat(
-                _peak_intensity_repeated, self.num_sensors, axis=2
-            )
-            _peak_intensity_repeated = _peak_intensity_repeated
-        else:
-            peak_odor_intesity = self.peak_odor_intensity[index_source]
-            peak_odor_intesity = np.expand_dims(peak_odor_intesity, axis=0)
-            _peak_intensity_repeated = peak_odor_intesity[:, :, np.newaxis]
-            _peak_intensity_repeated = np.repeat(
-                _peak_intensity_repeated, self.num_sensors, axis=2
-            )
-            _peak_intensity_repeated = _peak_intensity_repeated
+        peak_odor_intesity = self.peak_odor_intensity[index_source]
+        peak_odor_intesity = np.expand_dims(peak_odor_intesity, axis=0)
+        _peak_intensity_repeated = peak_odor_intesity[:, :, np.newaxis]
+        _peak_intensity_repeated = np.repeat(
+            _peak_intensity_repeated, self.num_sensors, axis=2
+        )
+        _peak_intensity_repeated = _peak_intensity_repeated
         antennae_pos = sim.physics.bind(sim._antennae_sensors).sensordata
         antennae_pos = antennae_pos.reshape(4, 3)
         antennae_pos_repeated = antennae_pos[np.newaxis, np.newaxis, :, :]
@@ -682,7 +672,7 @@ class OdorArena(BaseArena):
         return control_signal
 
     def generate_specific_turning_control(
-        self, index_source, sim, peak_intensity=np.empty(0), attractive_gain=-500
+        self, index_source, sim, attractive_gain=-500
     ):
         """
         This functions is used to compute
@@ -693,7 +683,7 @@ class OdorArena(BaseArena):
         by the index_source.
         """
 
-        obs = self.get_specific_olfaction(index_source, sim, peak_intensity)
+        obs = self.get_specific_olfaction(index_source, sim)
 
         attractive_intensities = np.average(
             obs[0, :].reshape(2, 2), axis=0, weights=[9, 1]
@@ -722,7 +712,7 @@ class OdorArena(BaseArena):
         """
         return self.peak_odor_intensity
 
-    def compute_richest_closest_source(self, obs) -> float:
+    def compute_richest_closest_source(self, obs, food_source=False) -> float:
         """
         This method is used to compute the closest source to the fly that has the highest reward.
         A reward can be shared between different sources of the same smell.
@@ -733,22 +723,38 @@ class OdorArena(BaseArena):
         ----------
         obs: ObsType
             The observation as defined by the environment.
+        food_source : bool
+            Whether the arena is a OdorArenaEnriched or not.
 
         Returns
         -------
-        source index
+        index_source : float
+            the index of the richest closest source
 
         """
         max_key = max(self.valence_dictionary, key=self.valence_dictionary.get)
+        print(self.valence_dictionary)
         possible_sources = []
         for el in range(len(self.peak_odor_intensity)):
             if max_key == self.compute_smell_angle_value(self.peak_odor_intensity[el]):
                 possible_sources.append(el)
         distance = np.inf
         index_source = 0
-        for i in possible_sources:
-            tmp_distance = np.linalg.norm(obs["fly"][0, :2] - self.odor_source[i, :2])
-            if tmp_distance < distance:
-                distance = tmp_distance
-                index_source = i
+        if food_source:
+            for i in possible_sources:
+                print(i)
+                tmp_distance = np.linalg.norm(
+                    obs["fly"][0, :2] - self.food_sources[i].position[:2]
+                )
+                if tmp_distance < distance:
+                    distance = tmp_distance
+                    index_source = i
+        else:
+            for i in possible_sources:
+                tmp_distance = np.linalg.norm(
+                    obs["fly"][0, :2] - self.odor_source[i, :2]
+                )
+                if tmp_distance < distance:
+                    distance = tmp_distance
+                    index_source = i
         return index_source

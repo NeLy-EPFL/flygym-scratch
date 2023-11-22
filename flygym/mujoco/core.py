@@ -36,6 +36,8 @@ import flygym.mujoco.preprogrammed as preprogrammed
 import flygym.mujoco.state as state
 import flygym.mujoco.vision as vision
 from flygym.mujoco.arena import BaseArena, FlatTerrain
+from flygym.mujoco.arena.food_sources import FoodSource
+from flygym.mujoco.arena import change_rgba
 from flygym.common import get_data_path
 
 
@@ -1326,7 +1328,7 @@ class NeuroMechFly(gym.Env):
         return self.get_observation(), self.get_info()
 
     def step(
-        self, action: ObsType, truncation=True, angle_key=False
+        self, action: ObsType, truncation=True, angle_key=False, food_source=False
     ) -> Tuple[ObsType, float, bool, bool, Dict[str, Any]]:
         """Step the Gym environment.
 
@@ -1341,6 +1343,9 @@ class NeuroMechFly(gym.Env):
             This boolean is used to decide the way the fly receives the reward, meaning
             if the fly receives the reward associated to the source (angle_key = False)
             or to the smell (angle_key = True)
+        food_source : bool
+            Whether the arena is an OdorArenaEnriched or an OdorArena
+
 
         Returns
         -------
@@ -1370,7 +1375,7 @@ class NeuroMechFly(gym.Env):
         self.curr_time += self.timestep
         self.elapsed_time += self.timestep
         observation = self.get_observation()
-        reward = self.get_reward(observation, angle_key)
+        reward = self.get_reward(observation, angle_key, food_source)
         terminated = self.is_terminated()
         truncated = self.is_truncated(observation, truncation)
         self.food_stocked_curr -= self.food_loss_rate
@@ -1853,7 +1858,7 @@ class NeuroMechFly(gym.Env):
 
         return obs
 
-    def get_reward(self, obs, angle_key) -> float:
+    def get_reward(self, obs, angle_key, food_source) -> float:
         """
         Get the reward for the current state of the environment
         once the fly is closed enough to the odor source
@@ -1865,30 +1870,49 @@ class NeuroMechFly(gym.Env):
         angle_key : bool
             Whether the fly receives the reward associated to the food source
             (angle_key = False) or to the smell (angle_key = True)
+        food_source : bool
+            Whether the arena is an OdorArenaEnriched or an OdorArena
 
         Returns
         -------
         reward: float
             The reward
         """
-
-        for i in range(len(self.arena.odor_source)):
-            # if fly is within 2mm of the attractive/aversive odor source
-            if np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2]) < 2:
-                # the fly gets the reward
-                if angle_key:
+        if food_source:
+            for i in range(len(self.arena.food_sources)):
+                if (
+                    np.linalg.norm(
+                        obs["fly"][0, :2] - self.arena.food_sources[i].position[:2]
+                    )
+                    < 2
+                ):
                     smell_key_value = self.arena.compute_smell_angle_value(
                         self.arena.peak_odor_intensity[i]
                     )
                     reward = self.arena.valence_dictionary.get(smell_key_value)
                     self.fly_valence_dictionary.update(({smell_key_value: reward}))
-                else:
-                    smell_key_value = self.arena.compute_smell_key_value(
-                        self.arena.peak_odor_intensity[i]
-                    )
-                    reward = self.arena.valence_dictionary.get(smell_key_value)
-                    self.fly_valence_dictionary.update(({smell_key_value: reward}))
-                return reward
+                    return reward
+        else:
+            for i in range(len(self.arena.odor_source)):
+                # if fly is within 2mm of the attractive/aversive odor source
+                if (
+                    np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2])
+                    < 2
+                ):
+                    # the fly gets the reward
+                    if angle_key:
+                        smell_key_value = self.arena.compute_smell_angle_value(
+                            self.arena.peak_odor_intensity[i]
+                        )
+                        reward = self.arena.valence_dictionary.get(smell_key_value)
+                        self.fly_valence_dictionary.update(({smell_key_value: reward}))
+                    else:
+                        smell_key_value = self.arena.compute_smell_key_value(
+                            self.arena.peak_odor_intensity[i]
+                        )
+                        reward = self.arena.valence_dictionary.get(smell_key_value)
+                        self.fly_valence_dictionary.update(({smell_key_value: reward}))
+                        return reward
 
     def is_terminated(self):
         """Whether the episode has terminated due to factors that are
@@ -2114,7 +2138,7 @@ class NeuroMechFly(gym.Env):
                     index_source = i
         return index_source
 
-    def compute_closest_source(self, obs) -> float:
+    def compute_closest_source(self, obs, food_source=False) -> float:
         """
         This function returns the index of the closest
         source given the current position of the
@@ -2123,6 +2147,8 @@ class NeuroMechFly(gym.Env):
         ----------
         obs: ObsType
             The observation as defined by the environment.
+        food_source : bool
+            Whether the arena is an OdorArenaEnriched or an OdorArena
 
         Returns
         -------
@@ -2132,13 +2158,23 @@ class NeuroMechFly(gym.Env):
 
         distance = np.inf
         index_source = 0
-        for i in range(len(self.arena.odor_source)):
-            tmp_distance = np.linalg.norm(
-                obs["fly"][0, :2] - self.arena.odor_source[i, :2]
-            )
-            if tmp_distance < distance:
-                distance = tmp_distance
-                index_source = i
+        if food_source:
+            for i in range(len(self.arena.food_sources)):
+                print(i)
+                tmp_distance = np.linalg.norm(
+                    obs["fly"][0, :2] - self.arena.food_sources[i].position[:2]
+                )
+                if tmp_distance < distance:
+                    distance = tmp_distance
+                    index_source = i
+        else:
+            for i in range(len(self.arena.odor_source)):
+                tmp_distance = np.linalg.norm(
+                    obs["fly"][0, :2] - self.arena.odor_source[i, :2]
+                )
+                if tmp_distance < distance:
+                    distance = tmp_distance
+                    index_source = i
         return index_source
 
     def choose_odor_exploration(self) -> float:
@@ -2177,6 +2213,7 @@ class NeuroMechFly(gym.Env):
         probabilities depending on their associated scores.
         """
         scores = np.array([*self.key_odor_scores.values()])
+        print(scores)
         # If any of the scores are 0, choose a random index where the score is 0
         if np.any(scores < 1e-10):
             idxs = np.where(scores < 1e-10)[0]
@@ -2249,6 +2286,7 @@ class NeuroMechFly(gym.Env):
                 self.key_odor_scores[key] = 0
             elif self.key_odor_scores[key] > 100:
                 self.key_odor_scores[key] = 100
+        print(self.key_odor_scores)
 
     def generate_random_walk(self, num_steps):
         """
@@ -2338,6 +2376,42 @@ class NeuroMechFly(gym.Env):
             return True
         else:
             return False
+
+    def compute_new_valence(self, peak_intensity_x, peak_intensity_y) -> float:
+        """
+        This method is used to compute the valence of a new food source added later during the simulation to the OdorArenaEnriched.
+        The new valence is computed using the cosine similarity with the other sources already presented on the arena.
+        If a negative valence is computed, its value is set to 0.
+
+        Parameters
+        ----------
+        peak_intensity_x: float
+            The peak intensity of the new source along the x axis
+        peak_intensity_y: float
+            The peak intensity of the new source along the y axis
+
+        Returns
+        -------
+        confidence_level: float
+            the computed valence of the new food source
+        """
+        confidence_level = 0
+        peak_intensity = np.array([peak_intensity_x, peak_intensity_y])
+        normalized_peak_intensity = self.arena.normalize_peak_intensity(peak_intensity)
+        for el in range(len(self.arena.food_sources)):
+            normalized_el = self.arena.normalize_peak_intensity(
+                self.arena.peak_odor_intensity[el]
+            )
+            angle_rad = np.arccos(np.dot(normalized_el, normalized_peak_intensity))
+            angle_deg = np.degrees(angle_rad)
+            cosine = np.cos(angle_deg)
+            confidence_el = self.arena.valence_dictionary.get(
+                self.arena.compute_smell_angle_value(self.arena.peak_odor_intensity[el])
+            )
+            confidence_level += confidence_el * cosine
+        if confidence_level < 0:
+            confidence_level = 0
+        return confidence_level
 
 
 class MuJoCoParameters(Parameters):
