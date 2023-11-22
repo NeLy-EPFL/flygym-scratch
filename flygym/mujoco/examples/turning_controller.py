@@ -195,66 +195,6 @@ class HybridTurningNMF(NeuroMechFly):
         self.stumbling_correction = np.zeros(6)
         return obs, info
 
-    def render(self) -> Union[np.ndarray, None]:
-        """Call the ``render`` method to update the renderer. It should be
-        called every iteration; the method will decide by itself whether
-        action is required.
-
-        Returns
-        -------
-        np.ndarray
-            The rendered image is one is rendered.
-        """
-        if self.render_mode == "headless":
-            return None
-        if self.curr_time < len(self._frames) * self._eff_render_interval:
-            return None
-        if self.render_mode == "saved":
-            width, height = self.sim_params.render_window_size
-            camera = self.sim_params.render_camera
-            if self.update_camera_pos:
-                self._update_cam_pos()
-            if self.sim_params.camera_follows_fly_orientation:
-                self._update_cam_rot()
-            if self.sim_params.draw_adhesion:
-                self._draw_adhesion()
-            if self.sim_params.align_camera_with_gravity:
-                self._rotate_camera()
-            self.physics = mjcf.Physics.from_mjcf_model(self.arena_root)
-            img = self.physics.render(width=width, height=height, camera_id=camera)
-            img = img.copy()
-            if self.sim_params.draw_contacts:
-                img = self._draw_contacts(img)
-            if self.sim_params.draw_gravity:
-                img = self._draw_gravity(img)
-
-            render_playspeed_text = self.sim_params.render_playspeed_text
-            render_time_text = self.sim_params.render_timestamp_text
-            if render_playspeed_text or render_time_text:
-                if render_playspeed_text and render_time_text:
-                    text = (
-                        f"{self.curr_time:.2f}s ({self.sim_params.render_playspeed}x)"
-                    )
-                elif render_playspeed_text:
-                    text = f"{self.sim_params.render_playspeed}x"
-                elif render_time_text:
-                    text = f"{self.curr_time:.2f}s"
-                img = cv2.putText(
-                    img,
-                    text,
-                    org=(20, 30),
-                    fontFace=cv2.FONT_HERSHEY_DUPLEX,
-                    fontScale=0.8,
-                    color=(0, 0, 0),
-                    lineType=cv2.LINE_AA,
-                    thickness=1,
-                )
-
-            self._frames.append(img)
-            self._last_render_time = self.curr_time
-            return self._frames[-1]
-        else:
-            raise NotImplementedError
 
     def step(self, action, truncation=True, angle_key=False, food_source=False):
         """Step the simulation forward one timestep.
