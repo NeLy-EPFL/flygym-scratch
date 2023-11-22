@@ -220,7 +220,6 @@ class HybridTurningNMF(NeuroMechFly):
                 self._draw_adhesion()
             if self.sim_params.align_camera_with_gravity:
                 self._rotate_camera()
-            self.physics = mjcf.Physics.from_mjcf_model(self.arena_root)
             img = self.physics.render(width=width, height=height, camera_id=camera)
             img = img.copy()
             if self.sim_params.draw_contacts:
@@ -255,13 +254,8 @@ class HybridTurningNMF(NeuroMechFly):
             return self._frames[-1]
         else:
             raise NotImplementedError
-<<<<<<< HEAD
-    
-    def step(self, action, truncation=True, angle_key=False):
-=======
 
     def step(self, action, truncation=True, angle_key=False, food_source=False):
->>>>>>> 88dc7d164a1af3a7edd7559dd88d85a34e24a623
         """Step the simulation forward one timestep.
 
         Parameters
@@ -338,20 +332,6 @@ class HybridTurningNMF(NeuroMechFly):
         }
         return super().step(action, truncation, angle_key, food_source)
 
-<<<<<<< HEAD
-    def add_source(self, new_source):
-        """Adds a new food source to the environment and updates everything accordingly."""
-        if isinstance(self.arena, OdorArenaEnriched):
-            self.arena.add_source(new_source)
-            smell_key_value = self.arena.compute_smell_angle_value(new_source.peak_intensity)
-            if smell_key_value not in self.key_odor_scores.keys():
-                self.key_odor_scores.update({smell_key_value: 0})
-            marker_body = self.arena_root.worldbody.add(
-                "body", name=f"odor_source_marker_{len(self.arena.food_sources)-1}", pos=new_source.position, mocap=True
-            )
-            marker_body.add(
-                "geom", type="capsule", size=(self.arena.marker_size, self.arena.marker_size), rgba=new_source.marker_color
-=======
     def add_source(self):
         """ 
         This method is used when a new food source needs to be added to the current OdorArenaEnriched.
@@ -368,7 +348,6 @@ class HybridTurningNMF(NeuroMechFly):
                 peak_intensity_x, peak_intensity_y = np.random.randint(2, 10, 2)
                 odor_valence = self.compute_new_valence(
                     peak_intensity_x, peak_intensity_y
->>>>>>> 88dc7d164a1af3a7edd7559dd88d85a34e24a623
                 )
                 odor_key = self.arena.compute_smell_angle_value(
                     np.array([peak_intensity_x, peak_intensity_y])
