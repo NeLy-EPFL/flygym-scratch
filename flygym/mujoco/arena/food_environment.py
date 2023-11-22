@@ -13,6 +13,10 @@ logging.basicConfig(level=logging.INFO)
 
 
 def change_rgba(rgba):
+    """
+    This method is used to normalize the color
+    with which a food source is rendered
+    """
     temp = []
     for i in range(3):
         temp.append(rgba[i] / 256)
@@ -137,7 +141,7 @@ class OdorArenaEnriched(OdorArena):
 
     def move_source(self, source_index, new_pos=np.empty(0)) -> None:
         """
-        This function is used when we want to move a food source on the arena to a new position.
+        This function is used when we want to move a food source on the OdorArenaEnriched to a new position.
 
         Parameters
         ----------
@@ -150,7 +154,8 @@ class OdorArenaEnriched(OdorArena):
 
     def add_source(self, new_source) -> None:
         """
-        This function is used to add a new source the OdorArenaEnriched.
+        This function is used to add a new source to the OdorArenaEnriched.
+
         Parameters
         ----------
         new_source: food_source
@@ -167,6 +172,6 @@ class OdorArenaEnriched(OdorArena):
 
     def consume(self, source_index) -> None:
         """
-        This function is used to consume(eat) the food source specified by source_index
+        This function is used to consume(eat) the food source specified by the source_index
         """
         self.food_sources[source_index].consume()

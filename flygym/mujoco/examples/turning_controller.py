@@ -334,8 +334,8 @@ class HybridTurningNMF(NeuroMechFly):
         return super().step(action, truncation, angle_key, food_source)
 
     def add_source(self):
-        """ "
-        This method is used when a new food source needs to be added to the current arena.
+        """ 
+        This method is used when a new food source needs to be added to the current OdorArenaEnriched.
         The food source position, peak_intensity are randomly generated while the valence of the new
         food source is computed using the cosine similarity.
         Later, all the dictionaries of both the arena and the fly are updated.
@@ -345,8 +345,8 @@ class HybridTurningNMF(NeuroMechFly):
         if isinstance(self.arena, OdorArenaEnriched):
             x = random.uniform(0.0, 1.0)
             if x > 0:
-                x_pos, y_pos = np.random.randint(0, 50, 2)
-                peak_intensity_x, peak_intensity_y = np.random.randint(0, 10, 2)
+                x_pos, y_pos = np.random.randint(0, 30, 2)
+                peak_intensity_x, peak_intensity_y = np.random.randint(2, 10, 2)
                 odor_valence = self.compute_new_valence(
                     peak_intensity_x, peak_intensity_y
                 )
@@ -366,7 +366,6 @@ class HybridTurningNMF(NeuroMechFly):
                         ]
                     ),
                 )
-                self.arena.add_source(new_source)
                 self.arena.valence_dictionary[odor_key] = round(odor_valence)
                 self.fly_valence_dictionary[odor_key] = round(odor_valence)
                 self.key_odor_scores[odor_key] = round(odor_valence)
@@ -383,6 +382,7 @@ class HybridTurningNMF(NeuroMechFly):
                     size=(self.arena.marker_size, self.arena.marker_size),
                     rgba=new_source.marker_color,
                 )
+                print(self.arena.valence_dictionary, self.fly_valence_dictionary, self.key_odor_scores)
 
 
 if __name__ == "__main__":

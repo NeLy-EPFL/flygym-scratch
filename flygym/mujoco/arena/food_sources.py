@@ -50,13 +50,17 @@ class FoodSource:
         self.marker_color = marker_color
         self.stock = stock
 
-    def get_odor_dimension(self):
-        return self.peak_intensity.shape[0]
+    def move_source(self, new_pos=np.empty(0)) -> None:
+        """
+        This method is used to move the food source in the OdorArenaEnriched.
+        If the fly has already visited the source more than a certain treshold (here 5)
+        the food source is moved to a new position, representing a new
+        source of the same food.
 
-    def get_valence_dimension(self):
-        return self.odor_valence.shape[0]
-
-    def move_source(self, new_pos=np.empty(0)):
+        Parameters
+        new_pos : array
+            The new position of the food source
+        """
         self.consume()
         if self.stock == 0:
             self.stock = 5
@@ -67,5 +71,9 @@ class FoodSource:
             else:
                 self.position = new_pos
 
-    def consume(self):
+    def consume(self) -> None:
+        """
+        Everytime the fly approaches a food source, the source's stock decreases
+        (the fly eats the food decreasing its available quantity).
+        """
         self.stock -= 1

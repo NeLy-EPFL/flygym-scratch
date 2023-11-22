@@ -733,6 +733,7 @@ class OdorArena(BaseArena):
 
         """
         max_key = max(self.valence_dictionary, key=self.valence_dictionary.get)
+        print(self.valence_dictionary)
         possible_sources = []
         for el in range(len(self.peak_odor_intensity)):
             if max_key == self.compute_smell_angle_value(self.peak_odor_intensity[el]):
@@ -741,8 +742,9 @@ class OdorArena(BaseArena):
         index_source = 0
         if food_source:
             for i in possible_sources:
+                print(i)
                 tmp_distance = np.linalg.norm(
-                    obs["fly"][0, :2] - self.arena.food_sources[i].position[:2]
+                    obs["fly"][0, :2] - self.food_sources[i].position[:2]
                 )
                 if tmp_distance < distance:
                     distance = tmp_distance

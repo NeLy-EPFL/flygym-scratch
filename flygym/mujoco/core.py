@@ -2160,6 +2160,7 @@ class NeuroMechFly(gym.Env):
         index_source = 0
         if food_source:
             for i in range(len(self.arena.food_sources)):
+                print(i)
                 tmp_distance = np.linalg.norm(
                     obs["fly"][0, :2] - self.arena.food_sources[i].position[:2]
                 )
@@ -2212,6 +2213,7 @@ class NeuroMechFly(gym.Env):
         probabilities depending on their associated scores.
         """
         scores = np.array([*self.key_odor_scores.values()])
+        print(scores)
         # If any of the scores are 0, choose a random index where the score is 0
         if np.any(scores < 1e-10):
             idxs = np.where(scores < 1e-10)[0]
@@ -2284,6 +2286,7 @@ class NeuroMechFly(gym.Env):
                 self.key_odor_scores[key] = 0
             elif self.key_odor_scores[key] > 100:
                 self.key_odor_scores[key] = 100
+        print(self.key_odor_scores)
 
     def generate_random_walk(self, num_steps):
         """
@@ -2376,7 +2379,7 @@ class NeuroMechFly(gym.Env):
 
     def compute_new_valence(self, peak_intensity_x, peak_intensity_y) -> float:
         """
-        This method is used to compute the valence of a new food source added later during the simulation to the arena.
+        This method is used to compute the valence of a new food source added later during the simulation to the OdorArenaEnriched.
         The new valence is computed using the cosine similarity with the other sources already presented on the arena.
         If a negative valence is computed, its value is set to 0.
 
