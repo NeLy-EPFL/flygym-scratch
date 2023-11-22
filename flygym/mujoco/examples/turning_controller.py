@@ -12,6 +12,7 @@ from flygym.mujoco.arena import change_rgba
 from flygym.mujoco import Parameters, NeuroMechFly
 from flygym.mujoco.examples.common import PreprogrammedSteps
 from flygym.mujoco.examples.cpg_controller import CPGNetwork
+import dm_control
 from dm_control import mjcf
 
 from flygym.mujoco.arena.food_environment import OdorArenaEnriched
@@ -195,7 +196,66 @@ class HybridTurningNMF(NeuroMechFly):
         self.stumbling_correction = np.zeros(6)
         return obs, info
 
+    def render(self) -> Union[np.ndarray, None]:
+        """Call the ``render`` method to update the renderer. It should be
+        called every iteration; the method will decide by itself whether
+        action is required.
 
+        Returns
+        -------
+        np.ndarray
+            The rendered image is one is rendered.
+        """
+        if self.render_mode == "headless":
+            return None
+        if self.curr_time < len(self._frames) * self._eff_render_interval:
+            return None
+        if self.render_mode == "saved":
+            width, height = self.sim_params.render_window_size
+            camera = self.sim_params.render_camera
+            if self.update_camera_pos:
+                self._update_cam_pos()
+            if self.sim_params.camera_follows_fly_orientation:
+                self._update_cam_rot()
+            if self.sim_params.draw_adhesion:
+                self._draw_adhesion()
+            if self.sim_params.align_camera_with_gravity:
+                self._rotate_camera()
+            img = self.physics.render(width=width, height=height, camera_id=camera)
+            img = img.copy()
+            if self.sim_params.draw_contacts:
+                img = self._draw_contacts(img)
+            if self.sim_params.draw_gravity:
+                img = self._draw_gravity(img)
+
+            render_playspeed_text = self.sim_params.render_playspeed_text
+            render_time_text = self.sim_params.render_timestamp_text
+            if render_playspeed_text or render_time_text:
+                if render_playspeed_text and render_time_text:
+                    text = (
+                        f"{self.curr_time:.2f}s ({self.sim_params.render_playspeed}x)"
+                    )
+                elif render_playspeed_text:
+                    text = f"{self.sim_params.render_playspeed}x"
+                elif render_time_text:
+                    text = f"{self.curr_time:.2f}s"
+                img = cv2.putText(
+                    img,
+                    text,
+                    org=(20, 30),
+                    fontFace=cv2.FONT_HERSHEY_DUPLEX,
+                    fontScale=0.8,
+                    color=(0, 0, 0),
+                    lineType=cv2.LINE_AA,
+                    thickness=1,
+                )
+
+            self._frames.append(img)
+            self._last_render_time = self.curr_time
+            return self._frames[-1]
+        else:
+            raise NotImplementedError
+            
     def step(self, action, truncation=True, angle_key=False, food_source=False):
         """Step the simulation forward one timestep.
 
@@ -285,9 +345,13 @@ class HybridTurningNMF(NeuroMechFly):
         if isinstance(self.arena, OdorArenaEnriched):
             x = random.uniform(0.0, 1.0)
             if x > 0:
-                x_pos, y_pos = np.random.randint(0, 30, 2)
+                x_pos = np.random.randint(0, 30, 1)
+                y_pos = np.random.randint(0, 30, 1)
                 peak_intensity_x, peak_intensity_y = np.random.randint(2, 10, 2)
                 odor_valence = self.compute_new_valence(
+                    peak_intensity_x, peak_intensity_y
+                )
+                odor_confidence = self.compute_new_confidence(
                     peak_intensity_x, peak_intensity_y
                 )
                 odor_key = self.arena.compute_smell_angle_value(
@@ -306,9 +370,10 @@ class HybridTurningNMF(NeuroMechFly):
                         ]
                     ),
                 )
+                print(f"adding source at pos {new_source.position} and RGBA {new_source.marker_color}")
                 self.arena.valence_dictionary[odor_key] = round(odor_valence)
                 self.fly_valence_dictionary[odor_key] = round(odor_valence)
-                self.key_odor_scores[odor_key] = round(odor_valence)
+                self.key_odor_scores[odor_key] = round(odor_confidence)
                 self.arena.add_source(new_source)
                 marker_body = self.arena_root.worldbody.add(
                     "body",
@@ -322,7 +387,27 @@ class HybridTurningNMF(NeuroMechFly):
                     size=(self.arena.marker_size, self.arena.marker_size),
                     rgba=new_source.marker_color,
                 )
-                print(self.arena.valence_dictionary, self.fly_valence_dictionary, self.key_odor_scores)
+        self.reset_physics()
+
+    def reset_physics(self):
+        self.physics = mjcf.Physics.from_mjcf_model(self.arena_root)
+        self._adhesion_actuator_geomid = np.array(
+            [
+                self.physics.model.geom(
+                    "Animat/" + adhesion_actuator.body + "_collision"
+                ).id
+                for adhesion_actuator in self._adhesion_actuators
+            ]
+        )
+        if self.sim_params.draw_contacts or self.sim_params.draw_gravity:
+            width, height = self.sim_params.render_window_size
+            self._dm_camera = dm_control.mujoco.Camera(
+                self.physics,
+                camera_id=self.sim_params.render_camera,
+                width=width,
+                height=height,
+            )
+
 
 
 if __name__ == "__main__":

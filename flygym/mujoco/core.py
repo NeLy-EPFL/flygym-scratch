@@ -2381,6 +2381,40 @@ class NeuroMechFly(gym.Env):
         """
         This method is used to compute the valence of a new food source added later during the simulation to the OdorArenaEnriched.
         The new valence is computed using the cosine similarity with the other sources already presented on the arena.
+
+        Parameters
+        ----------
+        peak_intensity_x: float
+            The peak intensity of the new source along the x axis
+        peak_intensity_y: float
+            The peak intensity of the new source along the y axis
+
+        Returns
+        -------
+        valence_level: float
+            the computed valence of the new food source
+        """
+        valence_level = 0
+        peak_intensity = np.array([peak_intensity_x, peak_intensity_y])
+        normalized_peak_intensity = self.arena.normalize_peak_intensity(peak_intensity)
+        for el in range(len(self.arena.food_sources)):
+            normalized_el = self.arena.normalize_peak_intensity(
+                self.arena.peak_odor_intensity[el]
+            )
+            angle_rad = np.arccos(np.dot(normalized_el, normalized_peak_intensity))
+            angle_deg = np.degrees(angle_rad)
+            cosine = np.cos(angle_deg)
+            valence_el = self.arena.valence_dictionary.get(
+                self.arena.compute_smell_angle_value(self.arena.peak_odor_intensity[el])
+            )
+            valence_level += valence_el * cosine
+        
+        return valence_level
+    
+    def compute_new_confidence(self, peak_intensity_x, peak_intensity_y) -> float:
+        """
+        This method is used to compute the confidence of a new food source added later during the simulation to the OdorArenaEnriched.
+        The new valence is computed using the cosine similarity with the other sources already presented on the arena.
         If a negative valence is computed, its value is set to 0.
 
         Parameters
@@ -2393,7 +2427,7 @@ class NeuroMechFly(gym.Env):
         Returns
         -------
         confidence_level: float
-            the computed valence of the new food source
+            the computed confidence of the new food source
         """
         confidence_level = 0
         peak_intensity = np.array([peak_intensity_x, peak_intensity_y])
