@@ -196,10 +196,16 @@ class HybridTurningNMF(NeuroMechFly):
         self.stumbling_correction = np.zeros(6)
         return obs, info
 
-    def render(self) -> Union[np.ndarray, None]:
+    def render(self, plot_internal_state=False) -> Union[np.ndarray, None]:
         """Call the ``render`` method to update the renderer. It should be
         called every iteration; the method will decide by itself whether
         action is required.
+
+        Parameters
+        ----------
+        plot_internal_state : bool
+            This parameters decide if we want to plot as well
+            the internal state of the fly (mating state, food stocks (AAs) level)
 
         Returns
         -------
@@ -249,7 +255,36 @@ class HybridTurningNMF(NeuroMechFly):
                     lineType=cv2.LINE_AA,
                     thickness=1,
                 )
-
+            # If plot_internal_state is True,
+            # we plot the mating state and the
+            # food stock levels
+            if plot_internal_state:
+                # Internal state
+                internal_state = self.compute_internal_state()
+                text = f"Internal state: {internal_state}"
+                img = cv2.putText(
+                    img,
+                    text,
+                    org=(20, 60),
+                    fontFace=cv2.FONT_HERSHEY_DUPLEX,
+                    fontScale=0.8,
+                    color=(0, 0, 0),
+                    lineType=cv2.LINE_AA,
+                    thickness=1,
+                )
+                # Mating state
+                mating_state = self.mating_state
+                text = f"Mating state: {mating_state}"
+                img = cv2.putText(
+                    img,
+                    text,
+                    org=(20, 80),
+                    fontFace=cv2.FONT_HERSHEY_DUPLEX,
+                    fontScale=0.8,
+                    color=(0, 0, 0),
+                    lineType=cv2.LINE_AA,
+                    thickness=1,
+                )
             self._frames.append(img)
             self._last_render_time = self.curr_time
             return self._frames[-1]

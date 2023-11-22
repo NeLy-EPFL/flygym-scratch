@@ -5,6 +5,7 @@ import logging
 import warnings
 import random
 import sys
+import matplotlib.cm as cm
 from typing import List, Tuple, Dict, Any, Optional, Union
 from pathlib import Path
 from dataclasses import dataclass
@@ -2413,9 +2414,9 @@ class NeuroMechFly(gym.Env):
     
     def compute_new_confidence(self, peak_intensity_x, peak_intensity_y) -> float:
         """
-        This method is used to compute the confidence of a new food source added later during the simulation to the OdorArenaEnriched.
-        The new valence is computed using the cosine similarity with the other sources already presented on the arena.
-        If a negative valence is computed, its value is set to 0.
+        This method is used to compute the key_odor_scores value of a new food source added later during the simulation to the OdorArenaEnriched.
+        The new confidence is computed using the cosine similarity with the other sources already presented on the arena.
+        If a negative confidence is computed, its value is set to 0.
 
         Parameters
         ----------
@@ -2427,7 +2428,7 @@ class NeuroMechFly(gym.Env):
         Returns
         -------
         confidence_level: float
-            the computed confidence of the new food source
+            the computed valence of the new food source
         """
         confidence_level = 0
         peak_intensity = np.array([peak_intensity_x, peak_intensity_y])
@@ -2439,13 +2440,27 @@ class NeuroMechFly(gym.Env):
             angle_rad = np.arccos(np.dot(normalized_el, normalized_peak_intensity))
             angle_deg = np.degrees(angle_rad)
             cosine = np.cos(angle_deg)
-            confidence_el = self.arena.valence_dictionary.get(
+            confidence_el = self.key_odor_scores.get(
                 self.arena.compute_smell_angle_value(self.arena.peak_odor_intensity[el])
             )
             confidence_level += confidence_el * cosine
         if confidence_level < 0:
             confidence_level = 0
         return confidence_level
+    
+    def generate_color_plot(self):
+        
+        colors = cm.rainbow(np.linspace(0, 1, len(self.arena.valence_dictionary)))
+        color_dict = {}
+        for element in range(len(colors)):
+            color_dict[self.arena.compute_smell_angle_value(self.arena.peak_odor_intensity[element])]= colors[element]
+
+        color_source = {}
+        for element in range(len(self.arena.food_sources)):
+            key = self.arena.compute_smell_angle_value(self.arena.peak_odor_intensity[element])
+            color = color_dict.get(key)
+            color_source[element] = color
+        return color_source
 
 
 class MuJoCoParameters(Parameters):
