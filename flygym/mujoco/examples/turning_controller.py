@@ -380,8 +380,8 @@ class HybridTurningNMF(NeuroMechFly):
         if isinstance(self.arena, OdorArenaEnriched):
             x = random.uniform(0.0, 1.0)
             if x > 0:
-                x_pos = np.random.randint(0, 30, 1)
-                y_pos = np.random.randint(0, 30, 1)
+                x_pos = np.random.randint(0, 30, 1)[0]
+                y_pos = np.random.randint(0, 23, 1)[0]
                 peak_intensity_x, peak_intensity_y = np.random.randint(2, 10, 2)
                 odor_valence = self.compute_new_valence(
                     peak_intensity_x, peak_intensity_y
@@ -405,7 +405,7 @@ class HybridTurningNMF(NeuroMechFly):
                         ]
                     ),
                 )
-                print(f"adding source at pos {new_source.position} and RGBA {new_source.marker_color}")
+                print(f"Adding source at pos {new_source.position} and RGBA {new_source.marker_color}")
                 self.arena.valence_dictionary[odor_key] = round(odor_valence)
                 self.fly_valence_dictionary[odor_key] = round(odor_valence)
                 self.key_odor_scores[odor_key] = round(odor_confidence)
@@ -422,6 +422,13 @@ class HybridTurningNMF(NeuroMechFly):
                     size=(self.arena.marker_size, self.arena.marker_size),
                     rgba=new_source.marker_color,
                 )
+        self.reset_physics()
+
+    def move_source(self, source_index, new_pos=np.empty(0)) -> None:
+        if isinstance(self.arena, OdorArenaEnriched):
+            self.arena.move_source(source_index, new_pos)
+        self.arena_root.find("body", f"odor_source_marker_{source_index}").set_attributes(pos = self.arena.food_sources[source_index].position)
+        print(f"Moving source {source_index} to new position {self.arena.food_sources[source_index].position}")
         self.reset_physics()
 
     def reset_physics(self):

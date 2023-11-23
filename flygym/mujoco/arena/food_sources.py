@@ -18,6 +18,8 @@ class FoodSource:
         The RGBA color of the source on the image frames.
     stock : int
         The number of times the fly can still visit the source before its stock runs out.
+    stock_init : int
+        The initial number of times a fly can visit each source before its stock runs out.
 
     Parameters
     ----------
@@ -49,6 +51,7 @@ class FoodSource:
         self.odor_valence = odor_valence
         self.marker_color = marker_color
         self.stock = stock
+        self.stock_init = stock
 
     def move_source(self, new_pos=np.empty(0)) -> None:
         """
@@ -61,19 +64,22 @@ class FoodSource:
         new_pos : array
             The new position of the food source
         """
-        self.consume()
-        if self.stock == 0:
-            self.stock = 5
-            if np.shape(new_pos) == (0,):
-                x_pos, y_pos = np.random.randint(0, 50, 2)
-                new_pos = [x_pos, y_pos, 1.5]
-                self.position = new_pos
-            else:
-                self.position = new_pos
+        if np.shape(new_pos) == (0,):
+            x_pos = np.random.randint(0, 30, 1)[0]
+            y_pos = np.random.randint(0, 23, 1)[0]
+            new_pos = [x_pos, y_pos, 1.5]
+            self.position = new_pos
+        else:
+            self.position = new_pos
 
     def consume(self) -> None:
         """
         Everytime the fly approaches a food source, the source's stock decreases
-        (the fly eats the food decreasing its available quantity).
+        (the fly eats the food decreasing its available quantity). If the food
+        stock reaches zero, then the food source dissapears and a new one appears
+        (the food source is restocked and its location is changed).
         """
         self.stock -= 1
+        if self.stock == 0:
+            self.stock = self.stock_init
+            self.move_source()
