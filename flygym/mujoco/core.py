@@ -1879,6 +1879,7 @@ class NeuroMechFly(gym.Env):
         reward: float
             The reward
         """
+        reward = None
         if food_source:
             for i in range(len(self.arena.food_sources)):
                 if (

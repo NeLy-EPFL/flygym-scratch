@@ -162,7 +162,7 @@ class OdorArenaEnriched(OdorArena):
             the new food source to be added
         """
         self.food_sources.append(new_source)
-        self.odor_source = np.array([source.position for source in self.food_sources])
+        self.odor_source = np.vstack([self.odor_source, new_source.position])
         self.peak_odor_intensity = np.array(
             [source.peak_intensity for source in self.food_sources]
         )
