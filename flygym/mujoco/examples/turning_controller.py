@@ -196,8 +196,8 @@ class HybridTurningNMF(NeuroMechFly):
         self.stumbling_correction = np.zeros(6)
         return obs, info
 
-    def render(self, plot_internal_state=False) -> Union[np.ndarray, None]:
-        """Call the ``render`` method to update the renderer. It should be
+    """def render(self, plot_internal_state=False) -> Union[np.ndarray, None]:
+        Call the ``render`` method to update the renderer. It should be
         called every iteration; the method will decide by itself whether
         action is required.
 
@@ -211,7 +211,7 @@ class HybridTurningNMF(NeuroMechFly):
         -------
         np.ndarray
             The rendered image is one is rendered.
-        """
+        
         if self.render_mode == "headless":
             return None
         if self.curr_time < len(self._frames) * self._eff_render_interval:
@@ -290,7 +290,8 @@ class HybridTurningNMF(NeuroMechFly):
             return self._frames[-1]
         else:
             raise NotImplementedError
-            
+            """
+
     def step(self, action, truncation=True, angle_key=False, food_source=False):
         """Step the simulation forward one timestep.
 
@@ -369,7 +370,7 @@ class HybridTurningNMF(NeuroMechFly):
         return super().step(action, truncation, angle_key, food_source)
 
     def add_source(self):
-        """ 
+        """
         This method is used when a new food source needs to be added to the current OdorArenaEnriched.
         The food source position, peak_intensity are randomly generated while the valence of the new
         food source is computed using the cosine similarity.
@@ -379,7 +380,7 @@ class HybridTurningNMF(NeuroMechFly):
         """
         if isinstance(self.arena, OdorArenaEnriched):
             x = random.uniform(0.0, 1.0)
-            if x > 0:
+            if x > 0.8:
                 x_pos = np.random.randint(0, 30, 1)[0]
                 y_pos = np.random.randint(0, 23, 1)[0]
                 peak_intensity_x, peak_intensity_y = np.random.randint(2, 10, 2)
@@ -405,7 +406,9 @@ class HybridTurningNMF(NeuroMechFly):
                         ]
                     ),
                 )
-                print(f"Adding source at pos {new_source.position} and RGBA {new_source.marker_color}")
+                print(
+                    f"Adding source at pos {new_source.position} and RGBA {new_source.marker_color}"
+                )
                 self.arena.valence_dictionary[odor_key] = round(odor_valence)
                 self.fly_valence_dictionary[odor_key] = round(odor_valence)
                 self.key_odor_scores[odor_key] = round(odor_confidence)
@@ -422,14 +425,20 @@ class HybridTurningNMF(NeuroMechFly):
                     size=(self.arena.marker_size, self.arena.marker_size),
                     rgba=new_source.marker_color,
                 )
-        self.reset_physics()
+        # self.reset_physics()
 
     def move_source(self, source_index, new_pos=np.empty(0)) -> None:
         if isinstance(self.arena, OdorArenaEnriched):
-            self.arena.move_source(source_index, new_pos)
-        self.arena_root.find("body", f"odor_source_marker_{source_index}").set_attributes(pos = self.arena.food_sources[source_index].position)
-        print(f"Moving source {source_index} to new position {self.arena.food_sources[source_index].position}")
-        self.reset_physics()
+            if self.arena.food_sources[source_index].consume():
+                self.arena.move_source(source_index, new_pos)
+                print(
+                    f"Moving source {source_index} to new position {self.arena.food_sources[source_index].position}"
+                )
+        self.arena_root.find(
+            "body", f"odor_source_marker_{source_index}"
+        ).set_attributes(pos=self.arena.food_sources[source_index].position)
+
+        # self.reset_physics()
 
     def reset_physics(self):
         self.physics = mjcf.Physics.from_mjcf_model(self.arena_root)
@@ -449,7 +458,6 @@ class HybridTurningNMF(NeuroMechFly):
                 width=width,
                 height=height,
             )
-
 
 
 if __name__ == "__main__":

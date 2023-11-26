@@ -64,6 +64,7 @@ class FoodSource:
         new_pos : array
             The new position of the food source
         """
+
         if np.shape(new_pos) == (0,):
             x_pos = np.random.randint(0, 30, 1)[0]
             y_pos = np.random.randint(0, 23, 1)[0]
@@ -79,7 +80,11 @@ class FoodSource:
         stock reaches zero, then the food source dissapears and a new one appears
         (the food source is restocked and its location is changed).
         """
+        to_be_moved = False
         self.stock -= 1
+        print(self.stock)
         if self.stock == 0:
             self.stock = self.stock_init
             self.move_source()
+            to_be_moved = True
+        return to_be_moved

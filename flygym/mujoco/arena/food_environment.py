@@ -149,9 +149,7 @@ class OdorArenaEnriched(OdorArena):
             the new food source to be added
         """
         self.food_sources.append(new_source)
-        self.odor_source = np.array(
-            [source.position for source in self.food_sources]
-        )
+        self.odor_source = np.array([source.position for source in self.food_sources])
         self.peak_odor_intensity = np.array(
             [source.peak_intensity for source in self.food_sources]
         )
@@ -171,9 +169,7 @@ class OdorArenaEnriched(OdorArena):
             the new position of the food source
         """
         self.food_sources[source_index].move_source(new_pos)
-        self.odor_source = np.array(
-            [source.position for source in self.food_sources]
-        )
+        self.odor_source = np.array([source.position for source in self.food_sources])
 
     def consume(self, source_index) -> None:
         """

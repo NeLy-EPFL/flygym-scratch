@@ -2286,7 +2286,6 @@ class NeuroMechFly(gym.Env):
                 self.key_odor_scores[key] = 0
             elif self.key_odor_scores[key] > 100:
                 self.key_odor_scores[key] = 100
- 
 
     def generate_random_walk(self, num_steps):
         """
@@ -2408,9 +2407,9 @@ class NeuroMechFly(gym.Env):
                 self.arena.compute_smell_angle_value(self.arena.peak_odor_intensity[el])
             )
             valence_level += valence_el * cosine
-        
+
         return valence_level
-    
+
     def compute_new_confidence(self, peak_intensity_x, peak_intensity_y) -> float:
         """
         This method is used to compute the key_odor_scores value of a new food source added later during the simulation to the OdorArenaEnriched.
@@ -2446,17 +2445,26 @@ class NeuroMechFly(gym.Env):
         if confidence_level < 0:
             confidence_level = 0
         return confidence_level
-    
+
     def generate_color_plot(self):
-        
+        """
+        This method is used to generate the colors for plotting the different sources of the OdorArenaEnriched.
+        It returns a dictionary where the food sources that have the same smell are associated to the same color.
+        """
         colors = cm.rainbow(np.linspace(0, 1, len(self.arena.valence_dictionary)))
         color_dict = {}
         for element in range(len(colors)):
-            color_dict[self.arena.compute_smell_angle_value(self.arena.peak_odor_intensity[element])]= colors[element]
+            color_dict[
+                self.arena.compute_smell_angle_value(
+                    self.arena.peak_odor_intensity[element]
+                )
+            ] = colors[element]
 
         color_source = {}
         for element in range(len(self.arena.food_sources)):
-            key = self.arena.compute_smell_angle_value(self.arena.peak_odor_intensity[element])
+            key = self.arena.compute_smell_angle_value(
+                self.arena.peak_odor_intensity[element]
+            )
             color = color_dict.get(key)
             color_source[element] = color
         return color_source
