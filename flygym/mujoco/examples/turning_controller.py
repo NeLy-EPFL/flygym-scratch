@@ -434,9 +434,10 @@ class HybridTurningNMF(NeuroMechFly):
                 print(
                     f"Moving source {source_index} to new position {self.arena.food_sources[source_index].position}"
                 )
-        self.arena_root.find(
-            "body", f"odor_source_marker_{source_index}"
-        ).set_attributes(pos=self.arena.food_sources[source_index].position)
+                object_to_move = self.arena_root.find(
+                    "body", f"odor_source_marker_{source_index}"
+                )
+                self.physics.bind(object_to_move).mocap_pos = self.arena.food_sources[source_index].position
 
         # self.reset_physics()
 
