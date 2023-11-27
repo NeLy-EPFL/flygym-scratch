@@ -60,6 +60,7 @@ class HybridTurningNMF(NeuroMechFly):
         elapsed_time: float = 0,
         simulation_time: float = 5,
         seed=0,
+        num_phantom_sources = 15,
         **kwargs,
     ):
         # Initialize core NMF simulation
@@ -109,6 +110,15 @@ class HybridTurningNMF(NeuroMechFly):
 
         # Find stumbling sensors
         self.stumbling_sensors = self._find_stumbling_sensor_indices()
+
+        # Put the phantom markers in the environment
+        num_phantom_sources = 0
+        phantom_marker_bodies = []
+
+
+
+        self.add_phantom_source()
+        self.reset_physics()
 
     def _find_stumbling_sensor_indices(self):
         stumbling_sensors = {leg: [] for leg in self.preprogrammed_steps.legs}
@@ -369,63 +379,87 @@ class HybridTurningNMF(NeuroMechFly):
         }
         return super().step(action, truncation, angle_key, food_source)
 
-    def add_source(self):
+    def add_phantom_source(self):
         """
-        This method is used when a new food source needs to be added to the current OdorArenaEnriched.
-        The food source position, peak_intensity are randomly generated while the valence of the new
-        food source is computed using the cosine similarity.
+        Mujoco does not support adding objects mid-simulation, so the extra food sources need to be 
+        before the start of the simulation.
+        This function adds "phantom" sources to the mujoco environment without adding them to the arena.
+        More explicitely, it adds invisible objects to the simulation (so we cannot see them on the video)
+        without adding them to the list of food sources of the arena so that the fly doesn't detect them.
+
+        The generated food source's position and peak_intensity are randomly generated while the valence 
+        of the new food source is computed using the cosine similarity of already existing sources.
+
         Later, all the dictionaries of both the arena and the fly are updated.
         In order to decide if to add a new source the arena, a random number is generated and
         if it is higher than a certain treshold a new source is added to the arena.
         """
         if isinstance(self.arena, OdorArenaEnriched):
             x = random.uniform(0.0, 1.0)
-            if x > 0.8:
-                x_pos = np.random.randint(0, 30, 1)[0]
-                y_pos = np.random.randint(0, 23, 1)[0]
-                peak_intensity_x, peak_intensity_y = np.random.randint(2, 10, 2)
-                odor_valence = self.compute_new_valence(
-                    peak_intensity_x, peak_intensity_y
+            x_pos = np.random.randint(0, 30, 1)[0]
+            y_pos = np.random.randint(0, 23, 1)[0]
+            peak_intensity_x, peak_intensity_y = np.random.randint(2, 10, 2)
+            odor_valence = self.compute_new_valence(
+                peak_intensity_x, peak_intensity_y
+            )
+            new_source = FoodSource(
+                [x_pos, y_pos, 1.5],
+                [peak_intensity_x, peak_intensity_y],
+                round(odor_valence),
+                change_rgba(
+                    [
+                        np.random.randint(255),
+                        np.random.randint(255),
+                        np.random.randint(255),
+                        0,
+                    ]
+                ),
                 )
-                odor_confidence = self.compute_new_confidence(
-                    peak_intensity_x, peak_intensity_y
+            print(
+                f"Adding phantom source at pos {new_source.position} and RGBA {new_source.marker_color}"
+            )
+            self.num_phantom_sources += 1
+            marker_body = self.arena_root.worldbody.add(
+            "body",
+            name=f"odor_source_marker_{len(self.arena.food_sources)+self.num_phantom_sources}",
+            pos=new_source.position,
+            mocap=True,
+            )
+            marker_body.add(
+                "geom",
+                type="capsule",
+                size=(self.arena.marker_size, self.arena.marker_size),
+                rgba=new_source.marker_color,
+            )
+            self.phantom_marker_bodies.append(marker_body)
+            self.num_phantom_sources += 1
+            return new_source
+ 
+    def add_existing_source(self, source):
+        """
+        This method actually adds the source to the environment so it can be sensed by the fly.
+        In order to decide if to add a new source the arena, a random number is generated and
+        if it is higher than a certain treshold a new source is added to the arena.
+        """
+        x = random.uniform(0.0, 1.0)
+        if x > 0.8:
+            rgba = source.marker_color
+            self.physics.bind(self.phantom_marker_bodies[0]).rgba = np.array([*rgba[:3], 1])
+            print("Adding actual source")
+            odor_confidence = self.compute_new_confidence(
+                    source.peak_intensity[0], self.peak_intensity[1]
                 )
-                odor_key = self.arena.compute_smell_angle_value(
-                    np.array([peak_intensity_x, peak_intensity_y])
-                )
-                new_source = FoodSource(
-                    [x_pos, y_pos, 1.5],
-                    [peak_intensity_x, peak_intensity_y],
-                    round(odor_valence),
-                    change_rgba(
-                        [
-                            np.random.randint(255),
-                            np.random.randint(255),
-                            np.random.randint(255),
-                            1,
-                        ]
-                    ),
-                )
-                print(
-                    f"Adding source at pos {new_source.position} and RGBA {new_source.marker_color}"
-                )
-                self.arena.valence_dictionary[odor_key] = round(odor_valence)
-                self.fly_valence_dictionary[odor_key] = round(odor_valence)
-                self.key_odor_scores[odor_key] = round(odor_confidence)
-                self.arena.add_source(new_source)
-                marker_body = self.arena_root.worldbody.add(
-                    "body",
-                    name=f"odor_source_marker_{len(self.arena.food_sources)-1}",
-                    pos=new_source.position,
-                    mocap=True,
-                )
-                marker_body.add(
-                    "geom",
-                    type="capsule",
-                    size=(self.arena.marker_size, self.arena.marker_size),
-                    rgba=new_source.marker_color,
-                )
+            odor_key = self.arena.compute_smell_angle_value(
+                np.array([source.peak_intensity[0], self.peak_intensity[1]])
+            )
+            self.arena.valence_dictionary[odor_key] = round(source.odor_valence)
+            self.fly_valence_dictionary[odor_key] = round(self.odor_valence)
+            self.key_odor_scores[odor_key] = round(odor_confidence)
+            self.arena.add_source(source)
+            self.phantom_marker_bodies.pop(0)
+
         # self.reset_physics()
+
 
     def move_source(self, source_index, new_pos=np.empty(0)) -> None:
         if isinstance(self.arena, OdorArenaEnriched):
