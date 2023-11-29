@@ -55,6 +55,8 @@ class OdorArenaEnriched(OdorArena):
         Dictionary used to track the valence associated to each smell.
         For each smell, a value for the key of the dictionary is computed
         to which the valence of the smell is associated in the dictionary.
+    num_phantom_sources : int
+        Number of phantom sources to be added to the arena.
     """
 
     def __init__(
@@ -70,6 +72,7 @@ class OdorArenaEnriched(OdorArena):
         diffuse_func: Callable = lambda x: x**-2,
         marker_size: float = 0.25,
         key_angle: bool = False,
+        num_phantom_sources: int = 15,
     ):
         """
         Initializer allowing addition of food sources in two ways :
@@ -138,6 +141,92 @@ class OdorArenaEnriched(OdorArena):
                     odor_source, peak_intensity, odor_valence
                 )
             ]
+        self.phantom_sources = []
+        for i in range(num_phantom_sources):
+            self.add_phantom_source() 
+
+    def compute_new_valence(self, peak_intensity_x, peak_intensity_y) -> float:
+        """
+        This method is used to compute the valence of a new food source added later during the simulation to the arena.
+        The new valence is computed using the cosine similarity with the other sources already present in the arena.
+
+        Parameters
+        ----------
+        peak_intensity_x: float
+            The peak intensity of the new source along the x axis
+        peak_intensity_y: float
+            The peak intensity of the new source along the y axis
+
+        Returns
+        -------
+        valence_level: float
+            the computed valence of the new food source
+        """
+        valence_level = 0
+        peak_intensity = np.array([peak_intensity_x, peak_intensity_y])
+        normalized_peak_intensity = self.normalize_peak_intensity(peak_intensity)
+        for el in range(len(self.food_sources)):
+            normalized_el = self.normalize_peak_intensity(
+                self.peak_odor_intensity[el]
+            )
+            angle_rad = np.arccos(np.dot(normalized_el, normalized_peak_intensity))
+            angle_deg = np.degrees(angle_rad)
+            cosine = np.cos(angle_deg)
+            valence_el = self.valence_dictionary.get(
+                self.compute_smell_angle_value(self.peak_odor_intensity[el])
+            )
+            valence_level += valence_el * cosine
+
+        return valence_level
+    
+    def add_phantom_source(self):
+        """
+        Mujoco does not support adding objects mid-simulation, so the extra food sources need to be 
+        before the start of the simulation.
+        This function adds "phantom" sources to the arena without making them visible or detectable.
+        More explicitely, it adds invisible objects to the arena (so we cannot see them on the video)
+        without adding them to its list of food sources so that the fly doesn't detect them.
+
+        The generated food source's position and peak_intensity are randomly generated while the valence 
+        of the new food source is computed using the cosine similarity of already existing sources.
+        """
+        x_pos = np.random.randint(0, 30, 1)[0]
+        y_pos = np.random.randint(0, 23, 1)[0]
+        peak_intensity_x, peak_intensity_y = np.random.randint(2, 10, 2)
+        odor_valence = self.compute_new_valence(
+            peak_intensity_x, peak_intensity_y
+        )
+        new_source = FoodSource(
+            [x_pos, y_pos, 1.5],
+            [peak_intensity_x, peak_intensity_y],
+            round(odor_valence),
+            change_rgba(
+                [
+                    np.random.randint(255),
+                    np.random.randint(255),
+                    np.random.randint(255),
+                    0,
+                ]
+            ),
+            )
+        print(
+            f"Adding phantom source at pos {new_source.position} and RGBA {new_source.marker_color}"
+        )
+        marker_body = self.root_element.worldbody.add(
+        "body",
+        name=f"odor_source_marker_{len(self.food_sources)+len(self.phantom_sources)}",
+        pos=new_source.position,
+        mocap=True,
+        )
+        marker_body.add(
+            "geom",
+            type="capsule",
+            name = f"phantom_geom_{len(self.food_sources)+len(self.phantom_sources)}",
+            size=(self.marker_size, self.marker_size),
+            rgba=new_source.marker_color,
+        )
+        print("Adding", f"phantom_geom_{len(self.phantom_sources)}")
+        self.phantom_sources.append(new_source)
 
     def add_source(self, new_source) -> None:
         """

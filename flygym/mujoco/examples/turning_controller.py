@@ -60,6 +60,7 @@ class HybridTurningNMF(NeuroMechFly):
         elapsed_time: float = 0,
         simulation_time: float = 5,
         seed=0,
+        num_phantom_sources = 10,
         **kwargs,
     ):
         # Initialize core NMF simulation
@@ -194,103 +195,7 @@ class HybridTurningNMF(NeuroMechFly):
         self.cpg_network.reset(init_phases, init_magnitudes)
         self.retraction_correction = np.zeros(6)
         self.stumbling_correction = np.zeros(6)
-        return obs, info
-
-    """def render(self, plot_internal_state=False) -> Union[np.ndarray, None]:
-        Call the ``render`` method to update the renderer. It should be
-        called every iteration; the method will decide by itself whether
-        action is required.
-
-        Parameters
-        ----------
-        plot_internal_state : bool
-            This parameters decide if we want to plot as well
-            the internal state of the fly (mating state, food stocks (AAs) level)
-
-        Returns
-        -------
-        np.ndarray
-            The rendered image is one is rendered.
-        
-        if self.render_mode == "headless":
-            return None
-        if self.curr_time < len(self._frames) * self._eff_render_interval:
-            return None
-        if self.render_mode == "saved":
-            width, height = self.sim_params.render_window_size
-            camera = self.sim_params.render_camera
-            if self.update_camera_pos:
-                self._update_cam_pos()
-            if self.sim_params.camera_follows_fly_orientation:
-                self._update_cam_rot()
-            if self.sim_params.draw_adhesion:
-                self._draw_adhesion()
-            if self.sim_params.align_camera_with_gravity:
-                self._rotate_camera()
-            img = self.physics.render(width=width, height=height, camera_id=camera)
-            img = img.copy()
-            if self.sim_params.draw_contacts:
-                img = self._draw_contacts(img)
-            if self.sim_params.draw_gravity:
-                img = self._draw_gravity(img)
-
-            render_playspeed_text = self.sim_params.render_playspeed_text
-            render_time_text = self.sim_params.render_timestamp_text
-            if render_playspeed_text or render_time_text:
-                if render_playspeed_text and render_time_text:
-                    text = (
-                        f"{self.curr_time:.2f}s ({self.sim_params.render_playspeed}x)"
-                    )
-                elif render_playspeed_text:
-                    text = f"{self.sim_params.render_playspeed}x"
-                elif render_time_text:
-                    text = f"{self.curr_time:.2f}s"
-                img = cv2.putText(
-                    img,
-                    text,
-                    org=(20, 30),
-                    fontFace=cv2.FONT_HERSHEY_DUPLEX,
-                    fontScale=0.8,
-                    color=(0, 0, 0),
-                    lineType=cv2.LINE_AA,
-                    thickness=1,
-                )
-            # If plot_internal_state is True,
-            # we plot the mating state and the
-            # food stock levels
-            if plot_internal_state:
-                # Internal state
-                internal_state = self.compute_internal_state()
-                text = f"Internal state: {internal_state}"
-                img = cv2.putText(
-                    img,
-                    text,
-                    org=(20, 60),
-                    fontFace=cv2.FONT_HERSHEY_DUPLEX,
-                    fontScale=0.8,
-                    color=(0, 0, 0),
-                    lineType=cv2.LINE_AA,
-                    thickness=1,
-                )
-                # Mating state
-                mating_state = self.mating_state
-                text = f"Mating state: {mating_state}"
-                img = cv2.putText(
-                    img,
-                    text,
-                    org=(20, 80),
-                    fontFace=cv2.FONT_HERSHEY_DUPLEX,
-                    fontScale=0.8,
-                    color=(0, 0, 0),
-                    lineType=cv2.LINE_AA,
-                    thickness=1,
-                )
-            self._frames.append(img)
-            self._last_render_time = self.curr_time
-            return self._frames[-1]
-        else:
-            raise NotImplementedError
-            """
+        return obs, info 
 
     def step(self, action, truncation=True, angle_key=False, food_source=False):
         """Step the simulation forward one timestep.
@@ -368,77 +273,41 @@ class HybridTurningNMF(NeuroMechFly):
             "adhesion": np.array(adhesion_onoff).astype(int),
         }
         return super().step(action, truncation, angle_key, food_source)
-
-    def add_source(self):
+ 
+    def add_existing_source(self):
         """
-        This method is used when a new food source needs to be added to the current OdorArenaEnriched.
-        The food source position, peak_intensity are randomly generated while the valence of the new
-        food source is computed using the cosine similarity.
-        Later, all the dictionaries of both the arena and the fly are updated.
+        This method actually adds the source to the environment so it can be sensed by the fly.
         In order to decide if to add a new source the arena, a random number is generated and
         if it is higher than a certain treshold a new source is added to the arena.
         """
-        if isinstance(self.arena, OdorArenaEnriched):
-            x = random.uniform(0.0, 1.0)
-            if x > 0.8:
-                x_pos = np.random.randint(0, 30, 1)[0]
-                y_pos = np.random.randint(0, 23, 1)[0]
-                peak_intensity_x, peak_intensity_y = np.random.randint(2, 10, 2)
-                odor_valence = self.compute_new_valence(
-                    peak_intensity_x, peak_intensity_y
+        x = random.uniform(0.0, 1.0)
+        if x > 0.8 and len(self.arena.phantom_sources) > 0:
+            rgba = self.arena.phantom_sources[0].marker_color
+            rgba = [*rgba[:3], 1]
+            object_to_activate = self.arena_root.find("geom", f"phantom_geom_{len(self.arena.food_sources)}")
+            print("Found:", object_to_activate.get_attributes())
+            self.physics.bind(object_to_activate).rgba = np.array(rgba)
+            print("Adding actual source at position", self.arena.phantom_sources[0].position, "and with rgba", rgba)
+            odor_confidence = self.compute_new_confidence(
+                    self.arena.phantom_sources[0].peak_intensity[0], self.arena.phantom_sources[0].peak_intensity[1]
                 )
-                odor_confidence = self.compute_new_confidence(
-                    peak_intensity_x, peak_intensity_y
-                )
-                odor_key = self.arena.compute_smell_angle_value(
-                    np.array([peak_intensity_x, peak_intensity_y])
-                )
-                new_source = FoodSource(
-                    [x_pos, y_pos, 1.5],
-                    [peak_intensity_x, peak_intensity_y],
-                    round(odor_valence),
-                    change_rgba(
-                        [
-                            np.random.randint(255),
-                            np.random.randint(255),
-                            np.random.randint(255),
-                            1,
-                        ]
-                    ),
-                )
-                print(
-                    f"Adding source at pos {new_source.position} and RGBA {new_source.marker_color}"
-                )
-                self.arena.valence_dictionary[odor_key] = round(odor_valence)
-                self.fly_valence_dictionary[odor_key] = round(odor_valence)
-                self.key_odor_scores[odor_key] = round(odor_confidence)
-                self.arena.add_source(new_source)
-                marker_body = self.arena_root.worldbody.add(
-                    "body",
-                    name=f"odor_source_marker_{len(self.arena.food_sources)-1}",
-                    pos=new_source.position,
-                    mocap=True,
-                )
-                marker_body.add(
-                    "geom",
-                    type="capsule",
-                    size=(self.arena.marker_size, self.arena.marker_size),
-                    rgba=new_source.marker_color,
-                )
-        # self.reset_physics()
+            odor_key = self.arena.compute_smell_angle_value(
+                np.array([self.arena.phantom_sources[0].peak_intensity[0], self.arena.phantom_sources[0].peak_intensity[1]])
+            )
+            self.arena.valence_dictionary[odor_key] = round(self.arena.phantom_sources[0].odor_valence)
+            self.fly_valence_dictionary[odor_key] = round(self.arena.phantom_sources[0].odor_valence)
+            self.key_odor_scores[odor_key] = round(odor_confidence)
+            self.arena.add_source(self.arena.phantom_sources[0])
+            self.arena.phantom_sources.pop(0)
 
     def move_source(self, source_index, new_pos=np.empty(0)) -> None:
         if isinstance(self.arena, OdorArenaEnriched):
             if self.arena.food_sources[source_index].consume():
                 self.arena.move_source(source_index, new_pos)
-                print(
-                    f"Moving source {source_index} to new position {self.arena.food_sources[source_index].position}"
+                object_to_move = self.arena_root.find(
+                    "body", f"odor_source_marker_{source_index}"
                 )
-        self.arena_root.find(
-            "body", f"odor_source_marker_{source_index}"
-        ).set_attributes(pos=self.arena.food_sources[source_index].position)
-
-        # self.reset_physics()
+                self.physics.bind(object_to_move).mocap_pos = self.arena.food_sources[source_index].position
 
     def reset_physics(self):
         self.physics = mjcf.Physics.from_mjcf_model(self.arena_root)
