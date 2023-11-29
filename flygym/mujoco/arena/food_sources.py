@@ -82,7 +82,7 @@ class FoodSource:
         """
         to_be_moved = False
         self.stock -= 1
-        print(self.stock)
+        print("food stock", self.stock)
         if self.stock == 0:
             self.stock = self.stock_init
             self.move_source()

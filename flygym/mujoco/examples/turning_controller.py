@@ -309,7 +309,7 @@ class HybridTurningNMF(NeuroMechFly):
                 )
                 self.physics.bind(object_to_move).mocap_pos = self.arena.food_sources[source_index].position
 
-    def reset_physics(self):
+    """def reset_physics(self):
         self.physics = mjcf.Physics.from_mjcf_model(self.arena_root)
         self._adhesion_actuator_geomid = np.array(
             [
@@ -326,7 +326,7 @@ class HybridTurningNMF(NeuroMechFly):
                 camera_id=self.sim_params.render_camera,
                 width=width,
                 height=height,
-            )
+            )"""
 
 
 if __name__ == "__main__":
