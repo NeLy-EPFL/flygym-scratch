@@ -1401,7 +1401,7 @@ class NeuroMechFly(gym.Env):
 
         return observation, reward, terminated, truncated, info
 
-    def render(self, plot_internal_state=False) -> Union[np.ndarray, None]:
+    def render(self, plot_internal_state=False, plot_mating_state=False) -> Union[np.ndarray, None]:
         """Call the ``render`` method to update the renderer. It should be
         called every iteration; the method will decide by itself whether
         action is required.
@@ -1410,7 +1410,10 @@ class NeuroMechFly(gym.Env):
         ----------
         plot_internal_state : bool
             This parameters decide if we want to plot as well
-            the internal state of the fly (mating state, food stocks (AAs) level)
+            the internal state of the fly (food stocks (AAs) level)
+        plot_internal_state : bool
+            This parameters decide if we want to plot as well
+            the mating state of the fly
 
         Returns
         -------
@@ -1479,6 +1482,7 @@ class NeuroMechFly(gym.Env):
                     lineType=cv2.LINE_AA,
                     thickness=1,
                 )
+            if plot_mating_state:
                 # Mating state
                 mating_state = self.mating_state
                 text = f"Mating state: {mating_state}"
