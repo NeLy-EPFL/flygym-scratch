@@ -4,6 +4,7 @@ from gymnasium import spaces
 from gymnasium.utils.env_checker import check_env
 from typing import Dict, Union
 import cv2
+import logging
 import matplotlib.pyplot as plt
 import random
 
@@ -285,7 +286,7 @@ class HybridTurningNMF(NeuroMechFly):
             rgba = self.arena.phantom_sources[0].marker_color
             rgba = [*rgba[:3], 1]
             object_to_activate = self.arena_root.find("geom", f"phantom_geom_{len(self.arena.food_sources)}")
-            print("Found:", object_to_activate.get_attributes())
+            logging.info("Found:", object_to_activate.get_attributes())
             self.physics.bind(object_to_activate).rgba = np.array(rgba)
             print("Adding actual source at position", self.arena.phantom_sources[0].position, "and with rgba", rgba)
             odor_confidence = self.compute_new_confidence(

@@ -209,7 +209,7 @@ class OdorArenaEnriched(OdorArena):
                 ]
             ),
             )
-        print(
+        logging.info(
             f"Adding phantom source at pos {new_source.position} and RGBA {new_source.marker_color}"
         )
         marker_body = self.root_element.worldbody.add(
@@ -225,7 +225,7 @@ class OdorArenaEnriched(OdorArena):
             size=(self.marker_size, self.marker_size),
             rgba=new_source.marker_color,
         )
-        print("Adding", f"phantom_geom_{len(self.phantom_sources)}")
+        logging.info("Adding", f"phantom_geom_{len(self.phantom_sources)}")
         self.phantom_sources.append(new_source)
 
     def add_source(self, new_source) -> None:

@@ -35,7 +35,7 @@ class FoodSource:
         The RGBA color of the source on the image frames. By default it is [255, 0, 0, 1]
     stock : int, optional
         The number of times the fly can still visit the source before its stock runs out. By
-        default it is 5.
+        default it is 2.
     """
 
     def __init__(
@@ -44,7 +44,7 @@ class FoodSource:
         peak_intensity: np.ndarray = np.array([1]),
         odor_valence: float = 0.0,
         marker_color: np.ndarray = np.array([255, 0, 0, 1]),
-        stock: int = 5,
+        stock: int = 2,
     ):
         self.position = position
         self.peak_intensity = peak_intensity
@@ -87,4 +87,5 @@ class FoodSource:
             self.stock = self.stock_init
             self.move_source()
             to_be_moved = True
+            self.stock == 2
         return to_be_moved
