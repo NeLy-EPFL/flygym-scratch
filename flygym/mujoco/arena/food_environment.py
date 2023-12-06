@@ -246,8 +246,8 @@ class OdorArenaEnriched(OdorArena):
 
     def move_source(self, source_index, new_pos=np.empty(0)) -> None:
         """
-        This function is used when we want to move a food source on the OdorArenaEnriched to a new position.
-        
+        This function is used to move a food source on the OdorArenaEnriched to a new position.
+        The food source is specified by the source_index
 
         Parameters
         ----------
@@ -261,6 +261,11 @@ class OdorArenaEnriched(OdorArena):
 
     def consume(self, source_index) -> None:
         """
-        This function is used to consume(eat) the food source specified by the source_index
+        This function is used to consume (eat) the food source specified by the source_index
+        
+        Parameters
+        ----------
+        source_index: float
+            the index of the source that needs to be moved
         """
         self.food_sources[source_index].consume()
