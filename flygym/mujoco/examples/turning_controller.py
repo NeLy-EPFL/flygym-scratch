@@ -61,7 +61,6 @@ class HybridTurningNMF(NeuroMechFly):
         elapsed_time: float = 0,
         simulation_time: float = 5,
         seed=0,
-        num_phantom_sources = 10,
         **kwargs,
     ):
         # Initialize core NMF simulation
@@ -81,12 +80,13 @@ class HybridTurningNMF(NeuroMechFly):
         self.correction_rates = correction_rates
         self.amplitude_range = amplitude_range
         self.draw_corrections = draw_corrections
-        # Add internal table
+        # Add internal table for
+        # the learning and memory simulation
         if len(fly_valence_dictionary) == 0:
             self.fly_valence_dictionary = {}
         else:
             self.fly_valence_dictionary = fly_valence_dictionary
-
+        # Set up for the learning and memory simulation
         self.simulation_time = simulation_time
         self.elapsed_time = elapsed_time
 
@@ -196,7 +196,7 @@ class HybridTurningNMF(NeuroMechFly):
         self.cpg_network.reset(init_phases, init_magnitudes)
         self.retraction_correction = np.zeros(6)
         self.stumbling_correction = np.zeros(6)
-        return obs, info 
+        return obs, info
 
     def step(self, action, truncation=True, angle_key=False, food_source=False):
         """Step the simulation forward one timestep.
@@ -208,11 +208,12 @@ class HybridTurningNMF(NeuroMechFly):
             turning.
         truncation : bool
             This boolean value is used to decide whether we want to truncate
-            the simulatio if certain time conditions are satisfied
+            the simulatio if the time since the last respawn has exceeded
+            a certain threshold
         angle_key : bool
             This boolean is used to decide the way the fly receives the reward, meaning
-            if the fly receives the reward associated to the source (angle_key = False)
-            or to the smell (angle_key = True)
+            if the fly receives the reward associated to the food source (angle_key = False)
+            or to the odor (angle_key = True)
         food_source : bool
             Whether the arena is an OdorArenaEnriched or an OdorArena
         """
@@ -274,60 +275,76 @@ class HybridTurningNMF(NeuroMechFly):
             "adhesion": np.array(adhesion_onoff).astype(int),
         }
         return super().step(action, truncation, angle_key, food_source)
- 
-    def add_existing_source(self):
+
+    def add_existing_source(self) -> None:
         """
         This method actually adds the source to the environment so it can be sensed by the fly.
-        In order to decide if to add a new source the arena, a random number is generated and
+        In order to decide if to add a new source the arena, a random number is uniformly generated and
         if it is higher than a certain treshold a new source is added to the arena.
         """
         x = random.uniform(0.0, 1.0)
         if x > 0.8 and len(self.arena.phantom_sources) > 0:
             rgba = self.arena.phantom_sources[0].marker_color
             rgba = [*rgba[:3], 1]
-            object_to_activate = self.arena_root.find("geom", f"phantom_geom_{len(self.arena.food_sources)}")
+            object_to_activate = self.arena_root.find(
+                "geom", f"phantom_geom_{len(self.arena.food_sources)}"
+            )
             logging.info("Found:", object_to_activate.get_attributes())
             self.physics.bind(object_to_activate).rgba = np.array(rgba)
-            print("Adding actual source at position", self.arena.phantom_sources[0].position, "and with rgba", rgba)
-            odor_confidence = self.compute_new_confidence(
-                    self.arena.phantom_sources[0].peak_intensity[0], self.arena.phantom_sources[0].peak_intensity[1]
-                )
-            odor_key = self.arena.compute_smell_angle_value(
-                np.array([self.arena.phantom_sources[0].peak_intensity[0], self.arena.phantom_sources[0].peak_intensity[1]])
+            print(
+                "Adding real source at position",
+                self.arena.phantom_sources[0].position,
+                "and with rgba",
+                rgba,
             )
-            self.arena.valence_dictionary[odor_key] = round(self.arena.phantom_sources[0].odor_valence)
-            self.fly_valence_dictionary[odor_key] = round(self.arena.phantom_sources[0].odor_valence)
+            # Compute confidence, valence
+            odor_confidence = self.compute_new_confidence(
+                self.arena.phantom_sources[0].peak_intensity[0],
+                self.arena.phantom_sources[0].peak_intensity[1],
+            )
+            odor_key = self.arena.compute_smell_angle_value(
+                np.array(
+                    [
+                        self.arena.phantom_sources[0].peak_intensity[0],
+                        self.arena.phantom_sources[0].peak_intensity[1],
+                    ]
+                )
+            )
+            self.arena.valence_dictionary[odor_key] = round(
+                self.arena.phantom_sources[0].odor_valence
+            )
+            self.fly_valence_dictionary[odor_key] = round(
+                self.arena.phantom_sources[0].odor_valence
+            )
             self.key_odor_scores[odor_key] = round(odor_confidence)
             self.arena.add_source(self.arena.phantom_sources[0])
             self.arena.phantom_sources.pop(0)
 
     def move_source(self, source_index, new_pos=np.empty(0)) -> None:
+        """
+        This method moves the specified source to a new position
+        inside the arena. The source is desplaced everytime
+        the fly has visited it a certain amount of times; during each visit,
+        the fly "eats" the source so after a certain numbers of visits,
+        the source disappear because it is consumed and we choose
+        to move it somewhere else on the arena
+
+        Parameters
+        ----------
+        source_index: float
+            the index of the source that needs to be moved if consumed
+        new_pos: np.array
+            the new position for the source, by default equal to 0
+        """
         if isinstance(self.arena, OdorArenaEnriched):
             if self.arena.food_sources[source_index].consume():
                 self.arena.move_source(source_index, new_pos)
                 object_to_move = self.arena_root.find(
                     "body", f"odor_source_marker_{source_index}"
                 )
-                self.physics.bind(object_to_move).mocap_pos = self.arena.food_sources[source_index].position
-
-    """def reset_physics(self):
-        self.physics = mjcf.Physics.from_mjcf_model(self.arena_root)
-        self._adhesion_actuator_geomid = np.array(
-            [
-                self.physics.model.geom(
-                    "Animat/" + adhesion_actuator.body + "_collision"
-                ).id
-                for adhesion_actuator in self._adhesion_actuators
-            ]
-        )
-        if self.sim_params.draw_contacts or self.sim_params.draw_gravity:
-            width, height = self.sim_params.render_window_size
-            self._dm_camera = dm_control.mujoco.Camera(
-                self.physics,
-                camera_id=self.sim_params.render_camera,
-                width=width,
-                height=height,
-            )"""
+                self.physics.bind(object_to_move).mocap_pos = self.arena.food_sources[
+                    source_index
+                ].position
 
 
 if __name__ == "__main__":

@@ -261,29 +261,37 @@ class NeuroMechFly(gym.Env):
     fly_valence_dictionary : dictionary
         Dictionary used to track the valence associated to each smell.
         For each smell, a value for the key of the dictionary is computed
-        to which the valence of the smell is associated in the dictionary.
+        to which the valence of the smell is associated.
     simulation_time : float
         The total time allowed for the simulation. By default it is equal
         to 5.
     elapsed_time : float
-        The total time since the fly has starting to explore in the current sub-simulation.
+        The total time since the fly has starting to explore in the current sub-simulation
+        (time elapsed since the last reswpawn).
     food_requirements : np.ndarray, size (2,)
-        The minimal amounts of stocked food at which the fly feels hungry or starved. By default it is [0.5, 0.1].
+        The minimal amounts of stocked food at which the fly feels hungry and starved. By default it is [0.5, 0.1].
     food_loss_rate : float
-        The rate at which the food (AAs) is lost (per timestep). By default it is 0.000001.
+        The rate at which the food (Amino acids = AAs) is lost (per timestep). By default it is 0.000001.
     food_stocked_init : float
         The initial amount of food (AAs) the fly has stored. By default it is 1.
     food_stocked_curr : float
         The current amount of food (AAs) the fly has stored. It is initialized to food_stocked. This value decreases by food_loss_rate at each timestep.
     mating_state : string
-        The mating state of the fly (virgin/mated). This state determines what food sources the fly looks for
+        The mating state of the fly (virgin/mated). This state determines what food sources the fly looks for.
     odor_score_reach_addition : float
         The score amount added to the odor_scores table when a fly reaches the source of an odor.
-        It corresponds to the fly's cerntainty that the odor source it followed corresponds to the
-        reached food source. By default it is 15.
+        It corresponds to the fly's certainty gained everytime it reaches a food source. By default it is 15.
     odor_score_time_loss : float
         The score amount lost at each iteration of the exploration process. It corresponds to the
         fact that over time the fly gets less and less certain of the mappings. By default it is 1.
+    odor_scores : np.ndarray, size (n_unique_odors,)
+        The table recording the score associated to each individual different food odor present on the arena.
+        Scores are between 0 and 100. Different odors are differentiated by their [a, b] intensity pairs.
+        The scores represent how certain the fly is about a specific food source.
+    key_odor_scores : dictionary
+        The dictionary recording the score associated to each individual different food odor smell.
+        The key for the smell is the same key as in the arena.valence_dictionary. Scores
+        are between 0 and 100. The scores represent how certain the fly is about a specific odor source.
     """
 
     _mujoco_config = util.load_config()
@@ -364,37 +372,37 @@ class NeuroMechFly(gym.Env):
         fly_valence_dictionary : dictionary
             Dictionary used to track the valence associated to each smell.
             For each smell, a value for the key of the dictionary is computed
-            to which the valence of the smell is associated in the dictionary.
+            to which the valence of the smell is associated.
         simulation_time : float
-            The total time allowed for the simulation. By deaault it is equal
+            The total time allowed for the simulation. By default it is equal
             to 5.
         elapsed_time : float
-            The total time since the fly has starting to explore
-            in the current sub-simulation.
+            The total time since the fly has starting to explore in the current sub-simulation
+            (time elapsed since the last reswpawn).
         food_requirements : np.ndarray, size (2,)
-            The minimal amounts of stocked food (AAs) at which the fly feels hungry or starved.
-            By default it is [0.5, 0.01].
+            The minimal amounts of stocked food at which the fly feels hungry and starved. By default it is [0.5, 0.1].
         food_loss_rate : float
-            The rate at which the food (AAs) is lost (per timestep). By default it is 0.001.
+            The rate at which the food (Amino acids = AAs) is lost (per timestep). By default it is 0.000001.
         food_stocked_init : float
             The initial amount of food (AAs) the fly has stored. By default it is 1.
+        food_stocked_curr : float
+            The current amount of food (AAs) the fly has stored. It is initialized to food_stocked. This value decreases by food_loss_rate at each timestep.
         mating_state : string
-            The mating state of the fly (virgin/mated). This state determines what food sources
-            the fly looks for.
-        odor_scores : np.ndarray, size (n_unique_odors,)
-            The table recording the score associated to each individual different food odor present on the arena.
-            Scores are between 0 and 100. Different odors are differentiated by their [a, b] intensity pairs.
-        key_odor_scores : dictionary
-            The dictionary recording the score associated to each individual different food odor smell.
-            The key for the smell is the same key as in the arena.valence_dictionary. Scores
-            are between 0 and 100.
+            The mating state of the fly (virgin/mated). This state determines what food sources the fly looks for.
         odor_score_reach_addition : float
             The score amount added to the odor_scores table when a fly reaches the source of an odor.
-            It corresponds to the fly's cerntainty that the odor source it followed corresponds to the
-            reached food source. By default it is 15.
+            It corresponds to the fly's certainty gained everytime it reaches a food source. By default it is 15.
         odor_score_time_loss : float
             The score amount lost at each iteration of the exploration process. It corresponds to the
             fact that over time the fly gets less and less certain of the mappings. By default it is 1.
+        odor_scores : np.ndarray, size (n_unique_odors,)
+            The table recording the score associated to each individual different food odor present on the arena.
+            Scores are between 0 and 100. Different odors are differentiated by their [a, b] intensity pairs.
+            The scores represent how certain the fly is about a specific food source.
+        key_odor_scores : dictionary
+            The dictionary recording the score associated to each individual different food odor smell.
+            The key for the smell is the same key as in the arena.valence_dictionary. Scores
+            are between 0 and 100. The scores represent how certain the fly is about a specific odor source.
         """
 
         if sim_params is None:
@@ -423,33 +431,38 @@ class NeuroMechFly(gym.Env):
         self._last_tarsalseg_names = [
             f"{side}{pos}Tarsus5" for side in "LR" for pos in "FMH"
         ]
+
         # Set up for being able to learn and memorize
-        # considering the internal state
         if len(fly_valence_dictionary) == 0:
             self.fly_valence_dictionary = {}
         else:
             self.fly_valence_dictionary = fly_valence_dictionary
-
+        # Set up the different attributes for the
+        # learning and memory scenario
         self.simulation_time = simulation_time
         self.elapsed_time = elapsed_time
         self.food_requirements = food_requirements
         self.food_loss_rate = food_loss_rate
         self.food_stocked_init = food_stocked_init
         self.food_stocked_curr = self.food_stocked_init
-
+        # Set up for being able to learn and memorize
+        # considering the confidence level associated to each
+        # odor source
         self.key_odor_scores = {}
         for i in range(self.arena.num_odor_sources):
             smell_key_value = self.arena.compute_smell_angle_value(
                 self.arena.peak_odor_intensity[i]
             )
             self.key_odor_scores.update({smell_key_value: 0})
-
+        # Mating state
         if (mating_state != "virgin") and (mating_state != "mated"):
             logging.warning("Invalid mating state, mating state set to virgin")
             self.mating_state = "virgin"
         else:
             self.mating_state = mating_state
-
+        # Set up for being able to learn and memorize
+        # considering the confidence level associated to each
+        # food source
         n_unique_odors = np.unique(self.arena.get_odor_intensities(), axis=0)
         self.odor_scores = np.zeros(n_unique_odors.shape[0])
         self.odor_score_reach_addition = odor_score_reach_addition
@@ -647,8 +660,6 @@ class NeuroMechFly(gym.Env):
             "render_fps": sim_params.render_fps,
         }
 
-        self.fly_valence_dictionary = {}
-
     def _configure_eyes(self):
         for name in ["LEye_cam", "REye_cam"]:
             sensor_config = self._mujoco_config["vision"]["sensor_positions"][name]
@@ -805,6 +816,8 @@ class NeuroMechFly(gym.Env):
         return spaces.Dict(_action_space)
 
     def _define_observation_space(self):
+        # The food stocked level is added to the observation space
+        # for the learning and memory scenario
         _observation_space = {
             "joints": spaces.Box(
                 low=-np.inf, high=np.inf, shape=(3, len(self.actuated_joints))
@@ -1312,8 +1325,6 @@ class NeuroMechFly(gym.Env):
             self._set_gravity(self.sim_params.gravity)
             if self.sim_params.align_camera_with_gravity:
                 self._camera_rot = np.eye(3)
-        self.curr_time = 0
-        self.elapsed_time = 0
         self._set_init_pose(self.init_pose)
         self._frames = []
         self._last_render_time = -np.inf
@@ -1322,7 +1333,16 @@ class NeuroMechFly(gym.Env):
         self._curr_visual_input = None
         self._vision_update_mask = []
         self._flip_counter = 0
+        # Reset parameters for the learning and memory scenario
+        self.curr_time = 0
+        self.elapsed_time = 0
         self.fly_valence_dictionary = {}
+        self.key_odor_scores = {}
+        for i in range(self.arena.num_odor_sources):
+            smell_key_value = self.arena.compute_smell_angle_value(
+                self.arena.peak_odor_intensity[i]
+            )
+            self.key_odor_scores.update({smell_key_value: 0})
         self.food_stocked_curr = self.food_stocked_init
         n_unique_odors = np.unique(self.arena.get_odor_intensities(), axis=0)
         self.odor_scores = np.zeros(n_unique_odors.shape[0])
@@ -1339,7 +1359,7 @@ class NeuroMechFly(gym.Env):
             Action dictionary as defined by the environment's action space.
         truncation : bool
             This boolean value is used to decide whether we want to truncate
-            the simulatio if certain time conditions are satisfied
+            the simulation if a certain time has elapsed since the last respawn
         angle_key : bool
             This boolean is used to decide the way the fly receives the reward, meaning
             if the fly receives the reward associated to the source (angle_key = False)
@@ -1401,7 +1421,9 @@ class NeuroMechFly(gym.Env):
 
         return observation, reward, terminated, truncated, info
 
-    def render(self, plot_internal_state=False, plot_mating_state=False) -> Union[np.ndarray, None]:
+    def render(
+        self, plot_internal_state=False, plot_mating_state=False
+    ) -> Union[np.ndarray, None]:
         """Call the ``render`` method to update the renderer. It should be
         called every iteration; the method will decide by itself whether
         action is required.
@@ -1466,10 +1488,8 @@ class NeuroMechFly(gym.Env):
                     thickness=1,
                 )
             # If plot_internal_state is True,
-            # we plot the mating state and the
-            # food stock levels
+            # we plot the food stock levels
             if plot_internal_state:
-                # Internal state
                 internal_state = self.compute_internal_state()
                 text = f"Internal state: {internal_state}"
                 img = cv2.putText(
@@ -1482,6 +1502,8 @@ class NeuroMechFly(gym.Env):
                     lineType=cv2.LINE_AA,
                     thickness=1,
                 )
+            # If plot_mating_state is True,
+            # we plot the mating state
             if plot_mating_state:
                 # Mating state
                 mating_state = self.mating_state
@@ -1847,6 +1869,8 @@ class NeuroMechFly(gym.Env):
             "contact_forces": contact_forces.astype(np.float32),
             "end_effectors": ee_pos.astype(np.float32),
             "fly_orientation": orientation_vec.astype(np.float32),
+            # We add the food stock level for learning
+            # and memory simulation
             "food_stocked": food_stocked,
         }
 
@@ -1884,14 +1908,19 @@ class NeuroMechFly(gym.Env):
             The reward
         """
         reward = None
+        # Check whether the arena is an OdorArenaEnriched or an OdorArena
         if food_source:
+            # If it is an OdorArenaEnriched
             for i in range(len(self.arena.food_sources)):
+                # if fly is within 2mm of a source
                 if (
                     np.linalg.norm(
                         obs["fly"][0, :2] - self.arena.food_sources[i].position[:2]
                     )
                     < 2
                 ):
+                    # we update the internal memory of the fly
+                    # we give the reward associated to the odor
                     smell_key_value = self.arena.compute_smell_angle_value(
                         self.arena.peak_odor_intensity[i]
                     )
@@ -1900,19 +1929,23 @@ class NeuroMechFly(gym.Env):
                     return reward
         else:
             for i in range(len(self.arena.odor_source)):
-                # if fly is within 2mm of the attractive/aversive odor source
+                # if fly is within 2mm of a source
                 if (
                     np.linalg.norm(obs["fly"][0, :2] - self.arena.odor_source[i, :2])
                     < 2
                 ):
                     # the fly gets the reward
                     if angle_key:
+                        # we update the internal memory of the fly
+                        # we give the reward associated to the odor
                         smell_key_value = self.arena.compute_smell_angle_value(
                             self.arena.peak_odor_intensity[i]
                         )
                         reward = self.arena.valence_dictionary.get(smell_key_value)
                         self.fly_valence_dictionary.update(({smell_key_value: reward}))
                     else:
+                        # we update the internal memory of the fly
+                        # we give the reward associated to the source
                         smell_key_value = self.arena.compute_smell_key_value(
                             self.arena.peak_odor_intensity[i]
                         )
@@ -1943,15 +1976,16 @@ class NeuroMechFly(gym.Env):
         """Whether the episode has terminated due to factors beyond the
             Markov Decision Process (eg. time limit, etc). In this scenario,
             it is truncated if the fly is too far away from any smell or
-            if the time of the current sub-simulation has exceed a certain trehsold.
+            if the time of the current sub-simulation (time elapsed since the
+            last respawning) has exceed a certain trehsold.
         Parameters
         ----------
         obs: ObsType
             The observation as defined by the environment.
 
         truncation: bool
-            Whether we allow the simulation to be truncated if certain time
-            conditions are met.
+            This boolean value is used to decide whether we want to truncate
+            the simulation if a certain time has elapsed since the last respawn.
 
         Returns
         -------
@@ -1965,7 +1999,8 @@ class NeuroMechFly(gym.Env):
                 sources_far_away += 1
         if truncation:
             # If fly is away from all sources or if the time
-            # in this sub-simulation has exceed a certain time-treshold
+            # elapsed since the last respawn has exceeded a
+            # certain threshold
             if sources_far_away == len(self.arena.odor_source) or (
                 self.elapsed_time > 10
             ):
@@ -2064,7 +2099,8 @@ class NeuroMechFly(gym.Env):
         reset_time=False,
     ) -> Tuple[ObsType, Dict[str, Any]]:
         """Respawn the fly in the initial position to start again exploring,
-        the same fly_valence_dictionary is kept for the fly, while the elapsed_time for the sub-simulation is set to zero.
+        the same fly_valence_dictionary, key_odor_score, odor_score are kept for the fly,
+        the elapsed_time since the last respawning is set to zero.
 
         Parameters
         ----------
@@ -2095,6 +2131,7 @@ class NeuroMechFly(gym.Env):
             self._set_gravity(self.sim_params.gravity)
             if self.sim_params.align_camera_with_gravity:
                 self._camera_rot = np.eye(3)
+        # Set elapsed time to 0
         self.elapsed_time = 0
         self._set_init_pose(self.init_pose)
         if reset_time:
@@ -2104,7 +2141,7 @@ class NeuroMechFly(gym.Env):
 
     def compute_internal_state(self) -> str:
         """
-        Compute the internal state of the fly
+        Return the internal state of the fly
         given the AAs' levels.
         """
         # Define fly internal state
@@ -2119,7 +2156,9 @@ class NeuroMechFly(gym.Env):
         """
         This function returns the index of the closest
         yeast source given the current position of the
-        fly in the simulation
+        fly in the simulation.
+        Yeast source: source whose odor_peak_intensity components
+        [x,y] are such that x>y.
 
         Parameters
         ----------
@@ -2148,7 +2187,8 @@ class NeuroMechFly(gym.Env):
         """
         This function returns the index of the closest
         source given the current position of the
-        fly in the simulation
+        fly in the simulation.
+
         Parameters
         ----------
         obs: ObsType
@@ -2164,6 +2204,7 @@ class NeuroMechFly(gym.Env):
 
         distance = np.inf
         index_source = 0
+        # If OdorArenaEnriched
         if food_source:
             for i in range(len(self.arena.food_sources)):
                 tmp_distance = np.linalg.norm(
@@ -2191,6 +2232,11 @@ class NeuroMechFly(gym.Env):
         If any of the scores are 0, then the fly will explore one of the odors that has
         such a score. If none are 0, then the fly will explore the odors with
         probabilities depending on their associated scores.
+
+        Returns
+        -------
+        index_source : float
+            the index of the closest yeast source
         """
         scores = self.odor_scores
         # If any of the scores are 0, choose a random index where the score is 0
@@ -2203,20 +2249,27 @@ class NeuroMechFly(gym.Env):
             # Choose the index in a random manner according to the inverse scores
             sum_inv_scores = np.sum(inv_scores)
             rand_int = np.random.randint(0, sum_inv_scores, dtype=np.int64())
-            for i in range(len(inv_scores)):
-                if rand_int < np.sum(inv_scores[: i + 1]):
-                    return i
+            for index_source in range(len(inv_scores)):
+                if rand_int < np.sum(inv_scores[: index_source + 1]):
+                    return index_source
 
     def choose_angle_key_odor_exploration(self) -> float:
         """
         This function acts as the decision module during exploration to see which
-        odor the fly will explore. It returns the index of the odor (chosen randomly) that the fly will
-        explore according to the key food scores table. It should be called only either
-        at the start of the exploration or after reaching one of the odor sources.
+        odor the fly will explore. It returns the index of the odor (chosen randomly)
+        that the fly will explore according to the key food scores table. It should be called
+        only either at the start of the exploration or after reaching one of the odor sources.
         If any of the scores are 0, then the fly will explore one of the odors that has
         such a score. If none are 0, then the fly will explore the odors with
         probabilities depending on their associated scores.
+
+        Returns
+        -------
+        index_source : float
+            the index of the closest yeast source
         """
+        # Convert the dictionary that stores the smells and their
+        # valence into an array
         scores = np.array([*self.key_odor_scores.values()])
         # If any of the scores are 0, choose a random index where the score is 0
         if np.any(scores < 1e-10):
@@ -2248,7 +2301,7 @@ class NeuroMechFly(gym.Env):
     def update_odor_scores(self, idx_odor_source=-1) -> None:
         """
         This function updates the odor scores table depending on
-        which odor source is reached, if any.
+        which food source is reached, if any.
 
         Parameters
         ----------
@@ -2291,9 +2344,10 @@ class NeuroMechFly(gym.Env):
             elif self.key_odor_scores[key] > 100:
                 self.key_odor_scores[key] = 100
 
-    def generate_random_walk(self, num_steps):
+    def generate_random_walk(self, num_steps) -> np.ndarray:
         """
-        Function needed to generate random walk
+        Function needed to generate random walk.
+        This function was coded by the Path&Integration group.
 
         Parameters
         ----------
@@ -2382,8 +2436,9 @@ class NeuroMechFly(gym.Env):
 
     def compute_new_valence(self, peak_intensity_x, peak_intensity_y) -> float:
         """
-        This method is used to compute the valence of a new food source added later during the simulation to the OdorArenaEnriched.
+        This method is used to compute the valence of a new odor source added later during the simulation to the OdorArenaEnriched.
         The new valence is computed using the cosine similarity with the other sources already presented on the arena.
+        If a negative valence is computed, its value is set to 0.
 
         Parameters
         ----------
@@ -2395,7 +2450,7 @@ class NeuroMechFly(gym.Env):
         Returns
         -------
         valence_level: float
-            the computed valence of the new food source
+            the computed valence of the new source
         """
         valence_level = 0
         peak_intensity = np.array([peak_intensity_x, peak_intensity_y])
@@ -2411,12 +2466,14 @@ class NeuroMechFly(gym.Env):
                 self.arena.compute_smell_angle_value(self.arena.peak_odor_intensity[el])
             )
             valence_level += valence_el * cosine
-
+        if valence_level < 0:
+            valence_level = 0
         return valence_level
 
     def compute_new_confidence(self, peak_intensity_x, peak_intensity_y) -> float:
         """
-        This method is used to compute the key_odor_scores value of a new food source added later during the simulation to the OdorArenaEnriched.
+        This method is used to compute the key_odor_scores value of a new odor source added later
+        during the simulation to the OdorArenaEnriched.
         The new confidence is computed using the cosine similarity with the other sources already presented on the arena.
         If a negative confidence is computed, its value is set to 0.
 
@@ -2430,7 +2487,7 @@ class NeuroMechFly(gym.Env):
         Returns
         -------
         confidence_level: float
-            the computed valence of the new food source
+            the computed valence of the new source
         """
         confidence_level = 0
         peak_intensity = np.array([peak_intensity_x, peak_intensity_y])
@@ -2452,7 +2509,7 @@ class NeuroMechFly(gym.Env):
 
     def generate_color_plot(self):
         """
-        This method is used to generate the colors for plotting the different sources of the OdorArenaEnriched.
+        This method is used to generate the colors for plotting the different food sources of the OdorArenaEnriched.
         It returns a dictionary where the food sources that have the same smell are associated to the same color.
         """
         colors = cm.rainbow(np.linspace(0, 1, len(self.arena.valence_dictionary)))
