@@ -362,13 +362,13 @@ class OdorArena(BaseArena):
         aversive_gain = 0
 
         x = np.random.randint(500)
-        y = np.random.randint(300)
+        y = np.random.randint(500)
         if explore:
             if x > y:
                 attractive_gain = -x
-                aversive_gain = y
+                aversive_gain = 0
             else:
-                attractive_gain = x
+                attractive_gain = 0
                 aversive_gain = -y
         else:
             # the fly will fo to the source with highest reward
