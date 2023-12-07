@@ -262,7 +262,7 @@ class OdorArenaEnriched(OdorArena):
     def consume(self, source_index) -> None:
         """
         This function is used to consume (eat) the food source specified by the source_index
-        
+
         Parameters
         ----------
         source_index: float
