@@ -29,6 +29,14 @@ all_tarsi_links = [
     f"{side}{pos}Tarsus{i}" for side in "LR" for pos in "FMH" for i in range(1, 6)
 ]
 
+all_groom_links = [
+    f"{side}{segment}"
+    for side in "LR"
+    for segment in ["Arista", "Funiculus", "Pedicel"]
+] + [
+    f"{side}FTarsus{i}" for side in "LR" for i in range(1, 6)
+]  # Front tarsi only
+
 all_groom_dofs = (
     [f"joint_{dof}" for dof in ["Head", "Head_yaw", "Head_roll"]]  # Head joints
     + [
