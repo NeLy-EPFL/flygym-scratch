@@ -30,6 +30,7 @@ author = "Neuroengineering Laboratory, EPFL"
 extensions = [
     "sphinx.ext.autodoc",
     "numpydoc",
+    "sphinxcontrib.googleanalytics",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -74,4 +75,10 @@ html_theme_options = {
 }
 
 html_favicon = "_static/favicon.ico"
-html_title = "NeuroMechFly"
+html_title = "NeuroMechFly documentation"
+html_logo = (
+    "https://github.com/NeLy-EPFL/_media/blob/main/flygym/banner_small.jpg?raw=true"
+)
+
+googleanalytics_id = "G-DF8S7T56G7"
+googleanalytics_enabled = True

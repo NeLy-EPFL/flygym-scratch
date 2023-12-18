@@ -25,24 +25,24 @@ Simulating embodied sensorimotor control with NeuroMechFly 2.0
    :width: 400
    :alt: Overview video
 
-.. note::
-   
-   FlyGym is still in beta; the API is subject to change.
-   We will add further examples and documentation in the coming weeks. Stay tuned!
-   --- 21 September 2023
+
+.. note:: 
+
+   FlyGym is in beta. API changes may occur in future releases. See the `changelog <changelog.html>`_ for details.
+
 
 FlyGym is the Python library for NeuroMechFly 2.0, a digital twin of the adult fruit fly *Drosophila melanogaster* that can see, smell, walk over challenging terrain, and interact with the environment (see our `NeuroMechFly 2.0 paper <https://www.biorxiv.org/content/10.1101/2023.09.18.556649>`_).
 
 FlyGym consists of the following components:
 
-- **Biomechanical model:** The biomechanical model is based on a micro-CT scan of a real adult female fly (see our `original NeuroMechFly <https://doi.org/10.1038/s41592-022-01466-7>`_ publication). We have adjusted several body segments (in particular in the antennae) to better reflect the biological reality.
-- **Vision:** The fly has compound eyes consisting of individual units called ommatidia arranged on a hexagonal lattice. We have simulated the visual inputs on the fly's retinas.
-- **Olfaction:** The fly has odor receptors in the antennae and the maxillary palps. We have simulated the odor inputs experienced by the fly by computing the odor/chemical intensity at these locations.
-- **Hierarchical control:** The fly's Central Nervous System consists of the brain and the Ventral Nerve Cord (VNC), a hierarchy analogous to our brain-spinal cord organization. The user can build a two-part model --- one handling brain-level sensory integration and decision making and one handling VNC-level motor control --- with a interface between the two consisting of descending (brain-to-VNC) and ascending (VNC-to-brain) representations.
-- **Leg adhesion:** Insects have evolved specialized adhesive structures at the tips of the legs that enable locomotion vertical walls and overhanging ceilings. We have simulated these structures in our model. The mechanism by which the fly lifts the legs during locomotion despite adhesive forces is not well understood; to abstract this, adhesion can be turned on/off during leg stance/swing.
-- **Mechanosensory feedback:** The user has access to the joint angles, forces, and contact forces experienced by the fly.
+- **Biomechanical model:** The biomechanical model is based on a micro-CT scan of a real adult female fly (see our `original NeuroMechFly <https://doi.org/10.1038/s41592-022-01466-7>`_ publication). In NeuroMechFly 2.0 we have updated several body segments (in particular in the antennae) to better reflect the biological reality.
+- **Vision:** The fly has compound eyes consisting of individual units called ommatidia. These are arranged on a hexagonal lattice. We have simulated visual inputs on the fly's retinae.
+- **Olfaction:** The fly has odor receptors in the antennae and maxillary palps. We have simulated olfactory signals experienced by the fly by computing odor/chemical intensities at the locations of the antennae and maxillary palps.
+- **Hierarchical control:** The fly's central nervous system (CNS) consists of the brain and the ventral nerve cord (VNC). This hierarchy is analogous to the brain-spinal cord organization of vertebrates. The user can build a two-part model --- one handling brain-level sensory integration and decision making as well as one handling VNC-level motor control --- with a interface between the two consisting of descending (brain-to-VNC) and ascending (VNC-to-brain) neuronal pathways.
+- **Leg adhesion:** Insects have evolved specialized adhesive structures at the tips of their legs. These enable locomotion on inclined and overhanging surfaces. We have simulated adhesion in our model. The mechanism by which the fly lifts the legs during locomotion despite adhesive forces is currently not well understood. Therefore, to abstract this, adhesion can be turned on or off during stance or swing of the legs, respectively.
+- **Mechanosensory feedback:** The user has access to joint angles, joint torques, and collision/contact forces experienced by the simulated fly.
 
-FlyGym formulates the control of the simulated fly as a `partially observable Markov Decision Process (MDP) <https://en.wikipedia.org/wiki/Partially_observable_Markov_decision_process>`_ and implements the `Gym interface <https://gymnasium.farama.org/>`_. This allows the user to use a wide range of reinforcement learning algorithms to train the fly to perform tasks. The standardized interface also allows the user to easily implement their own premotor computation and/or sensory preprocessing processes.
+FlyGym formulates the control of the simulated fly as a `partially observable Markov Decision Process (MDP) <https://en.wikipedia.org/wiki/Partially_observable_Markov_decision_process>`_ and implements the `Gym interface <https://gymnasium.farama.org/>`_. This allows the user to use a wide range of reinforcement learning (RL) algorithms to train the fly to perform tasks. The standardized interface also allows the user to easily implement their own premotor computation and/or sensory preprocessing.
 
 .. figure :: https://github.com/NeLy-EPFL/_media/blob/main/flygym/mdp.png?raw=true
    :width: 600
@@ -56,15 +56,8 @@ If you use FlyGym or NeuroMechFly in your research, please cite the following tw
 
 .. code-block:: bibtex
    
-   @article{WangChen2023,
-      author = {Sibo Wang-Chen and Victor Alfred Stimpfling and Pembe Gizem \"{O}zdil and Louise Genoud and Femke Hurtak and Pavan Ramdya},
-      title = {NeuroMechFly 2.0, a framework for simulating embodied sensorimotor control in adult Drosophila},
-      year = {2023},
-      doi = {10.1101/2023.09.18.556649},
-      URL = {https://www.biorxiv.org/content/early/2023/09/18/2023.09.18.556649},
-      journal = {bioRxiv}
-   }
-
+   % Original NeuroMechFly: Original biomechanical model, kinematic replay, CPG-based
+   % neural controller, PyBullet version, DoF analysis, perturbation tests
    @article{LobatoRios2022,
       doi = {10.1038/s41592-022-01466-7},
       url = {https://doi.org/10.1038/s41592-022-01466-7},
@@ -77,3 +70,18 @@ If you use FlyGym or NeuroMechFly in your research, please cite the following tw
       title = {{NeuroMechFly}, a neuromechanical model of adult {Drosophila} melanogaster},
       journal = {Nature Methods}
    }
+   
+   % NeuroMechFly 2.0: This library, MuJoCo version, leg adhesion, rule-based controller,
+   % hybrid controller, complex terrain, preprogrammed steps, leg adhesion, vision,
+   % olfaction, RL-based navigation, Gym environment, updated biomechanical model
+   @article{WangChen2023,
+      author = {Sibo Wang-Chen and Victor Alfred Stimpfling and Pembe Gizem \"{O}zdil and Louise Genoud and Femke Hurtak and Pavan Ramdya},
+      title = {NeuroMechFly 2.0, a framework for simulating embodied sensorimotor control in adult Drosophila},
+      year = {2023},
+      doi = {10.1101/2023.09.18.556649},
+      URL = {https://www.biorxiv.org/content/10.1101/2023.09.18.556649},
+      journal = {bioRxiv}
+   }
+
+.. note:: 
+   **Privacy policy:** This site uses Google Analytics to collect data about your interactions with our website. This includes information such as your IP address, browsing behavior, and device type. We use this data to improve our website and understand user preferences. Google Analytics uses Cookies, which are small text files stored on your device. See `How Google uses information from sites or apps that use our services <https://policies.google.com/technologies/partner-sites>`_. To opt-out, you can use a `browser extension <https://tools.google.com/dlpage/gaoptout>`_ to deactivate Google Analytics.
