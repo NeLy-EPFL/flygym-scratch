@@ -1,0 +1,38 @@
+joints:
+  joint_LFCoxa: 19
+  joint_LFFemur: -130
+  joint_LFTibia: 0
+  joint_LFTarsus1: 0
+
+  joint_LMCoxa: 0
+  joint_LMCoxa_yaw: 0
+  joint_LMCoxa_roll: 90
+  joint_LMFemur: -110
+  joint_LMTibia: 80
+  joint_LMTarsus1: -40
+
+  joint_LHCoxa: 0
+  joint_LHCoxa_yaw: 0
+  joint_LHCoxa_roll: 150
+  joint_LHFemur: -110
+  joint_LHTibia: 80
+  joint_LHTarsus1: -40
+
+  joint_RFCoxa: 19
+  joint_RFFemur: -130
+  joint_RFTibia: 0
+  joint_RFTarsus1: 0
+
+  joint_RMCoxa: 0
+  joint_RMCoxa_yaw: 0
+  joint_RMCoxa_roll: -90
+  joint_RMFemur: -110
+  joint_RMTibia: 80
+  joint_RMTarsus1: -40
+
+  joint_RHCoxa: 0
+  joint_RHCoxa_yaw: 0
+  joint_RHCoxa_roll: -150
+  joint_RHFemur: -110
+  joint_RHTibia: 80
+  joint_RHTarsus1: -40
