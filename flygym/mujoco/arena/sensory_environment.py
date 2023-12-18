@@ -544,7 +544,6 @@ class OdorArena(BaseArena):
 
         return attractive_gain, aversive_gain
 
-
     def is_yeast(self, source_index) -> bool:
         """
         This function returns whether the food

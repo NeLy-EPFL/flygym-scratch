@@ -469,17 +469,16 @@ class NeuroMechFly(gym.Env):
         self.odor_score_reach_addition = odor_score_reach_addition
         self.odor_score_time_loss = odor_score_time_loss
 
-        # The color associated to each different smell is 
+        # The color associated to each different smell is
         # needed later for plotting
         self.key_odor_colors = {}
-        if isinstance(self.arena, OdorArenaEnriched) :
-            print("in")
+        if isinstance(self.arena, OdorArenaEnriched):
+            logging.info("in")
             for source in self.arena.food_sources:
                 smell_key_value = self.arena.compute_smell_angle_value(
                     source.peak_intensity
                 )
                 self.key_odor_colors.update({smell_key_value: source.marker_color})
-
 
         if self.simulation_time <= 0:
             raise ValueError("Simulation time must be greater than zero.")
@@ -1515,7 +1514,7 @@ class NeuroMechFly(gym.Env):
                     lineType=cv2.LINE_AA,
                     thickness=1,
                 )
-        
+
             # If plot_mating_state is True,
             # we plot the mating state
             if plot_mating_state:
@@ -1532,27 +1531,21 @@ class NeuroMechFly(gym.Env):
                     lineType=cv2.LINE_AA,
                     thickness=1,
                 )
-            
-            # If plot_confidence is True, 
+
+            # If plot_confidence is True,
             # we plot the confidence on the right side of the frame
             if plot_confidence:
-                img = cv2.rectangle(
-                    img, 
-                    (width, 125), 
-                    (width - 150, 0),
-                    [0,0,0], 
-                    -1
-                )
+                img = cv2.rectangle(img, (width, 125), (width - 150, 0), [0, 0, 0], -1)
                 for i, key in enumerate(self.key_odor_scores.keys()):
                     confidence = self.key_odor_scores[key]
                     c = self.key_odor_colors[key]
-                    color = [int(comp*255) for comp in c[:3]]
+                    color = [int(comp * 255) for comp in c[:3]]
                     img = cv2.rectangle(
-                        img, 
-                        (width-i*15-5, 125),
-                        (width-15*(i+1), 125 - int(confidence)),
+                        img,
+                        (width - i * 15 - 5, 125),
+                        (width - 15 * (i + 1), 125 - int(confidence)),
                         color,
-                        -1
+                        -1,
                     )
             self._frames.append(img)
             self._last_render_time = self.curr_time
@@ -2366,20 +2359,20 @@ class NeuroMechFly(gym.Env):
         idx_odor_source: float
             The index of the source that has been reached.
         """
-        print("Updating for odor source :", idx_odor_source)
+        logging.info("Updating for odor source :", idx_odor_source)
         for key, values in self.key_odor_scores.items():
             self.key_odor_scores[key] = values - self.odor_score_time_loss
         key_to_update = self.arena.compute_smell_angle_value(
-                self.arena.peak_odor_intensity[idx_odor_source]
-            )
-        self.key_odor_scores[key_to_update] += self.odor_score_reach_addition+1
+            self.arena.peak_odor_intensity[idx_odor_source]
+        )
+        self.key_odor_scores[key_to_update] += self.odor_score_reach_addition + 1
         for key, values in self.key_odor_scores.items():
             if self.key_odor_scores[key] < 0:
                 self.key_odor_scores[key] = 0
             elif self.key_odor_scores[key] > 100:
                 self.key_odor_scores[key] = 100
-        print("New dict:", self.key_odor_scores)
-        print("Changed key:", key_to_update)
+        logging.info("New dict:", self.key_odor_scores)
+        logging.info("Changed key:", key_to_update)
 
     def generate_random_walk(self, num_steps) -> np.ndarray:
         """
@@ -2474,7 +2467,8 @@ class NeuroMechFly(gym.Env):
     def compute_new_valence(self, peak_intensity_x, peak_intensity_y) -> float:
         """
         This method is used to compute the valence of a new odor source added later during the simulation to the OdorArenaEnriched.
-        The new valence is computed using the cosine similarity with the other sources already presented on the arena.
+        The new valence is computed using the cosine similarity with the other sources already presented on the arena
+        if the odor source is not known; otherwise, the valence already memorized for that odor is returned.
         If a negative valence is computed, its value is set to 0.
 
         Parameters
@@ -2491,18 +2485,26 @@ class NeuroMechFly(gym.Env):
         """
         valence_level = 0
         peak_intensity = np.array([peak_intensity_x, peak_intensity_y])
-        normalized_peak_intensity = self.arena.normalize_peak_intensity(peak_intensity)
-        for el in range(len(self.arena.food_sources)):
-            normalized_el = self.arena.normalize_peak_intensity(
-                self.arena.peak_odor_intensity[el]
+        new_key = self.arena.compute_smell_angle_value(peak_intensity)
+        if new_key in self.arena.valence_dictionary:
+            valence_level = self.arena.valence_dictionary.get(new_key)
+        else:
+            normalized_peak_intensity = self.arena.normalize_peak_intensity(
+                peak_intensity
             )
-            angle_rad = np.arccos(np.dot(normalized_el, normalized_peak_intensity))
-            angle_deg = np.degrees(angle_rad)
-            cosine = np.cos(angle_deg)
-            valence_el = self.arena.valence_dictionary.get(
-                self.arena.compute_smell_angle_value(self.arena.peak_odor_intensity[el])
-            )
-            valence_level += valence_el * cosine
+            for el in range(len(self.arena.food_sources)):
+                normalized_el = self.arena.normalize_peak_intensity(
+                    self.arena.peak_odor_intensity[el]
+                )
+                angle_rad = np.arccos(np.dot(normalized_el, normalized_peak_intensity))
+                angle_deg = np.degrees(angle_rad)
+                cosine = np.cos(angle_deg)
+                valence_el = self.arena.valence_dictionary.get(
+                    self.arena.compute_smell_angle_value(
+                        self.arena.peak_odor_intensity[el]
+                    )
+                )
+                valence_level += valence_el * cosine
         if valence_level < 0:
             valence_level = 0
         return valence_level
@@ -2511,7 +2513,9 @@ class NeuroMechFly(gym.Env):
         """
         This method is used to compute the key_odor_scores value of a new odor source added later
         during the simulation to the OdorArenaEnriched.
-        The new confidence is computed using the cosine similarity with the other sources already presented on the arena.
+        The new confidence is computed using the cosine similarity with the other sources already
+        presented on the arena if the odor source is not known; otherwise, the confidence already memorized for that odor
+        is returned.
         If a negative confidence is computed, its value is set to 0.
 
         Parameters
@@ -2528,18 +2532,26 @@ class NeuroMechFly(gym.Env):
         """
         confidence_level = 0
         peak_intensity = np.array([peak_intensity_x, peak_intensity_y])
-        normalized_peak_intensity = self.arena.normalize_peak_intensity(peak_intensity)
-        for el in range(len(self.arena.food_sources)):
-            normalized_el = self.arena.normalize_peak_intensity(
-                self.arena.peak_odor_intensity[el]
+        new_key = self.arena.compute_smell_angle_value(peak_intensity)
+        if new_key in self.key_odor_scores:
+            confidence_level = self.key_odor_scores.get(new_key)
+        else:
+            normalized_peak_intensity = self.arena.normalize_peak_intensity(
+                peak_intensity
             )
-            angle_rad = np.arccos(np.dot(normalized_el, normalized_peak_intensity))
-            angle_deg = np.degrees(angle_rad)
-            cosine = np.cos(angle_deg)
-            confidence_el = self.key_odor_scores.get(
-                self.arena.compute_smell_angle_value(self.arena.peak_odor_intensity[el])
-            )
-            confidence_level += confidence_el * cosine
+            for el in range(len(self.arena.food_sources)):
+                normalized_el = self.arena.normalize_peak_intensity(
+                    self.arena.peak_odor_intensity[el]
+                )
+                angle_rad = np.arccos(np.dot(normalized_el, normalized_peak_intensity))
+                angle_deg = np.degrees(angle_rad)
+                cosine = np.cos(angle_deg)
+                confidence_el = self.key_odor_scores.get(
+                    self.arena.compute_smell_angle_value(
+                        self.arena.peak_odor_intensity[el]
+                    )
+                )
+                confidence_level += confidence_el * cosine
         if confidence_level < 0:
             confidence_level = 0
         return confidence_level
