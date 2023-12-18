@@ -131,6 +131,19 @@ def get_collision_geometries(config: str = "all") -> List[str]:
         ]
     elif config == "head":
         return ["Head_collision"]
+    elif config == "groom":
+        # Only use collisions between tarsus and antenna
+        leg_collisions = [f"{side}FTarsus{i}" for side in "LR" for i in range(1, 6)]
+        antenna_collisions = [
+            f"{side}{segment}"
+            for side in "LR"
+            for segment in ["Arista", "Funiculus", "Pedicel"]
+        ]
+        return [
+            (f"{leg}_collision", f"{antenna}_collision")
+            for leg in leg_collisions
+            for antenna in antenna_collisions
+        ]
     elif config == "none":
         return []
     else:
