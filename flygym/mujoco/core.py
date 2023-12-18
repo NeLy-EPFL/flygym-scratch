@@ -38,6 +38,7 @@ import flygym.mujoco.state as state
 import flygym.mujoco.vision as vision
 from flygym.mujoco.arena import BaseArena, FlatTerrain
 from flygym.mujoco.arena.food_sources import FoodSource
+from flygym.mujoco.arena.food_environment import OdorArenaEnriched
 from flygym.mujoco.arena import change_rgba
 from flygym.common import get_data_path
 
@@ -280,7 +281,7 @@ class NeuroMechFly(gym.Env):
         The mating state of the fly (virgin/mated). This state determines what food sources the fly looks for.
     odor_score_reach_addition : float
         The score amount added to the odor_scores table when a fly reaches the source of an odor.
-        It corresponds to the fly's certainty gained everytime it reaches a food source. By default it is 15.
+        It corresponds to the fly's certainty gained everytime it reaches a food source. By default it is 16.
     odor_score_time_loss : float
         The score amount lost at each iteration of the exploration process. It corresponds to the
         fact that over time the fly gets less and less certain of the mappings. By default it is 1.
@@ -467,6 +468,18 @@ class NeuroMechFly(gym.Env):
         self.odor_scores = np.zeros(n_unique_odors.shape[0])
         self.odor_score_reach_addition = odor_score_reach_addition
         self.odor_score_time_loss = odor_score_time_loss
+
+        # The color associated to each different smell is 
+        # needed later for plotting
+        self.key_odor_colors = {}
+        if isinstance(self.arena, OdorArenaEnriched) :
+            print("in")
+            for source in self.arena.food_sources:
+                smell_key_value = self.arena.compute_smell_angle_value(
+                    source.peak_intensity
+                )
+                self.key_odor_colors.update({smell_key_value: source.marker_color})
+
 
         if self.simulation_time <= 0:
             raise ValueError("Simulation time must be greater than zero.")
@@ -1422,7 +1435,7 @@ class NeuroMechFly(gym.Env):
         return observation, reward, terminated, truncated, info
 
     def render(
-        self, plot_internal_state=False, plot_mating_state=False
+        self, plot_internal_state=False, plot_mating_state=False, plot_confidence=False
     ) -> Union[np.ndarray, None]:
         """Call the ``render`` method to update the renderer. It should be
         called every iteration; the method will decide by itself whether
@@ -1502,6 +1515,7 @@ class NeuroMechFly(gym.Env):
                     lineType=cv2.LINE_AA,
                     thickness=1,
                 )
+        
             # If plot_mating_state is True,
             # we plot the mating state
             if plot_mating_state:
@@ -1518,7 +1532,28 @@ class NeuroMechFly(gym.Env):
                     lineType=cv2.LINE_AA,
                     thickness=1,
                 )
-
+            
+            # If plot_confidence is True, 
+            # we plot the confidence on the right side of the frame
+            if plot_confidence:
+                img = cv2.rectangle(
+                    img, 
+                    (width, 125), 
+                    (width - 150, 0),
+                    [0,0,0], 
+                    -1
+                )
+                for i, key in enumerate(self.key_odor_scores.keys()):
+                    confidence = self.key_odor_scores[key]
+                    c = self.key_odor_colors[key]
+                    color = [int(comp*255) for comp in c[:3]]
+                    img = cv2.rectangle(
+                        img, 
+                        (width-i*15-5, 125),
+                        (width-15*(i+1), 125 - int(confidence)),
+                        color,
+                        -1
+                    )
             self._frames.append(img)
             self._last_render_time = self.curr_time
             return self._frames[-1]
@@ -2310,7 +2345,7 @@ class NeuroMechFly(gym.Env):
         """
         # Subtract the time loss from the scores
         for el in self.odor_scores:
-            el = -self.odor_score_time_loss
+            el -= self.odor_score_time_loss
         # Add the reach addition to the score of the reached odor source
         if idx_odor_source != -1:
             self.odor_scores[idx_odor_source] += self.odor_score_reach_addition
@@ -2331,18 +2366,20 @@ class NeuroMechFly(gym.Env):
         idx_odor_source: float
             The index of the source that has been reached.
         """
+        print("Updating for odor source :", idx_odor_source)
         for key, values in self.key_odor_scores.items():
             self.key_odor_scores[key] = values - self.odor_score_time_loss
-        self.key_odor_scores[
-            self.arena.compute_smell_angle_value(
+        key_to_update = self.arena.compute_smell_angle_value(
                 self.arena.peak_odor_intensity[idx_odor_source]
             )
-        ] += self.odor_score_reach_addition
+        self.key_odor_scores[key_to_update] += self.odor_score_reach_addition+1
         for key, values in self.key_odor_scores.items():
             if self.key_odor_scores[key] < 0:
                 self.key_odor_scores[key] = 0
             elif self.key_odor_scores[key] > 100:
                 self.key_odor_scores[key] = 100
+        print("New dict:", self.key_odor_scores)
+        print("Changed key:", key_to_update)
 
     def generate_random_walk(self, num_steps) -> np.ndarray:
         """
