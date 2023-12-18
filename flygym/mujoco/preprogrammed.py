@@ -29,6 +29,29 @@ all_tarsi_links = [
     f"{side}{pos}Tarsus{i}" for side in "LR" for pos in "FMH" for i in range(1, 6)
 ]
 
+all_groom_dofs = (
+    [f"joint_{dof}" for dof in ["Head", "Head_yaw", "Head_roll"]]  # Head joints
+    + [
+        f"joint_{side}F{dof}"
+        for side in "LR"
+        for dof in [
+            "Coxa",
+            "Coxa_roll",
+            "Coxa_yaw",
+            "Femur",
+            "Femur_roll",
+            "Tibia",
+            "Tarsus1",
+        ]
+    ]  # Front leg joints
+    + [
+        f"joint_{side}{dof}{angle}"
+        for side in "LR"
+        for dof in ["Arista", "Funiculus", "Pedicel"]
+        for angle in ["", "_roll", "_yaw"]
+    ]  # Antennae joints
+)
+
 
 def get_preprogrammed_pose(pose: str) -> KinematicPose:
     """Load the preprogrammed pose given the key. Available poses are found
