@@ -293,6 +293,9 @@ class NeuroMechFly(gym.Env):
         The dictionary recording the score associated to each individual different food odor smell.
         The key for the smell is the same key as in the arena.valence_dictionary. Scores
         are between 0 and 100. The scores represent how certain the fly is about a specific odor source.
+    key_odor_colors : dictionary
+        This dictionary stores the color associated to each different smell; it is needed later for plotting
+        the confidence levels associated to each source
     """
 
     _mujoco_config = util.load_config()
@@ -1448,6 +1451,9 @@ class NeuroMechFly(gym.Env):
         plot_internal_state : bool
             This parameters decide if we want to plot as well
             the mating state of the fly
+        plot_confidence : bool
+            This parameters decide if we want to plot as well
+            the confidence levels with respect to each source
 
         Returns
         -------
