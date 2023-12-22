@@ -317,6 +317,7 @@ class HybridTurningNMF(NeuroMechFly):
                 self.arena.phantom_sources[0].odor_valence
             )
             self.key_odor_scores[odor_key] = round(odor_confidence)
+            print("Updating dict : adding key", odor_key)
             self.arena.add_source(self.arena.phantom_sources[0])
             self.arena.phantom_sources.pop(0)
 

@@ -469,17 +469,6 @@ class NeuroMechFly(gym.Env):
         self.odor_score_reach_addition = odor_score_reach_addition
         self.odor_score_time_loss = odor_score_time_loss
 
-        # The color associated to each different smell is 
-        # needed later for plotting
-        self.key_odor_colors = {}
-        if isinstance(self.arena, OdorArenaEnriched) :
-            print("in")
-            for source in self.arena.food_sources:
-                smell_key_value = self.arena.compute_smell_angle_value(
-                    source.peak_intensity
-                )
-                self.key_odor_colors.update({smell_key_value: source.marker_color})
-
 
         if self.simulation_time <= 0:
             raise ValueError("Simulation time must be greater than zero.")
@@ -1545,7 +1534,7 @@ class NeuroMechFly(gym.Env):
                 )
                 for i, key in enumerate(self.key_odor_scores.keys()):
                     confidence = self.key_odor_scores[key]
-                    c = self.key_odor_colors[key]
+                    c = self.arena.key_odor_colors[key]
                     color = [int(comp*255) for comp in c[:3]]
                     img = cv2.rectangle(
                         img, 
@@ -2366,7 +2355,7 @@ class NeuroMechFly(gym.Env):
         idx_odor_source: float
             The index of the source that has been reached.
         """
-        print("Updating for odor source :", idx_odor_source)
+        print(f"Updating for odor source {idx_odor_source} at position {self.arena.food_sources[idx_odor_source].position} and color {self.arena.food_sources[idx_odor_source].marker_color}")
         for key, values in self.key_odor_scores.items():
             self.key_odor_scores[key] = values - self.odor_score_time_loss
         key_to_update = self.arena.compute_smell_angle_value(

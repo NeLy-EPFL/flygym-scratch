@@ -144,6 +144,14 @@ class OdorArenaEnriched(OdorArena):
         for i in range(num_phantom_sources):
             self.add_phantom_source()
 
+        # The color associated to each different smell is needed later for plotting
+        self.key_odor_colors = {}
+        for source in self.food_sources:
+            smell_key_value = self.compute_smell_angle_value(
+                source.peak_intensity
+            )
+            self.key_odor_colors.update({smell_key_value: source.marker_color})
+
     def compute_new_valence(self, peak_intensity_x, peak_intensity_y) -> float:
         """
         This method is used to compute the valence of a new odor source added later during the simulation to the arena.
@@ -243,6 +251,11 @@ class OdorArenaEnriched(OdorArena):
         self.odor_valence = np.array(
             [source.odor_valence for source in self.food_sources]
         )
+        smell_key_value = self.compute_smell_angle_value(
+            new_source.peak_intensity
+        )
+        self.key_odor_colors.update({smell_key_value: new_source.marker_color})
+        self.num_odor_sources += 1
 
     def move_source(self, source_index, new_pos=np.empty(0)) -> None:
         """
