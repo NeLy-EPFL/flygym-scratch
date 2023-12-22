@@ -302,6 +302,12 @@ class HybridTurningNMF(NeuroMechFly):
                 self.arena.phantom_sources[0].peak_intensity[0],
                 self.arena.phantom_sources[0].peak_intensity[1],
             )
+
+            odor_valence = self.compute_new_valence(
+                self.arena.phantom_sources[0].peak_intensity[0],
+                self.arena.phantom_sources[0].peak_intensity[1],
+            )
+
             odor_key = self.arena.compute_smell_angle_value(
                 np.array(
                     [
@@ -310,12 +316,8 @@ class HybridTurningNMF(NeuroMechFly):
                     ]
                 )
             )
-            self.arena.valence_dictionary[odor_key] = round(
-                self.arena.phantom_sources[0].odor_valence
-            )
-            self.fly_valence_dictionary[odor_key] = round(
-                self.arena.phantom_sources[0].odor_valence
-            )
+            self.arena.valence_dictionary[odor_key] = round(odor_valence)
+            self.fly_valence_dictionary[odor_key] = round(odor_valence)
             self.key_odor_scores[odor_key] = round(odor_confidence)
             print("Updating dict : adding key", odor_key)
             self.arena.add_source(self.arena.phantom_sources[0])
