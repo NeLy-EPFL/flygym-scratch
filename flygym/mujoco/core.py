@@ -665,6 +665,7 @@ class NeuroMechFly(gym.Env):
             "render_fps": sim_params.render_fps,
         }
 
+
     def _configure_eyes(self):
         for name in ["LEye_cam", "REye_cam"]:
             sensor_config = self._mujoco_config["vision"]["sensor_positions"][name]
@@ -1427,7 +1428,7 @@ class NeuroMechFly(gym.Env):
         return observation, reward, terminated, truncated, info
 
     def render(
-        self, plot_internal_state=False, plot_mating_state=False, plot_confidence=False
+        self, plot_internal_state=False, plot_mating_state=False, plot_confidence=False, plot_reward=False, reward=0
     ) -> Union[np.ndarray, None]:
         """Call the ``render`` method to update the renderer. It should be
         called every iteration; the method will decide by itself whether
@@ -1545,9 +1546,27 @@ class NeuroMechFly(gym.Env):
                     )
             self._frames.append(img)
             self._last_render_time = self.curr_time
+
+            # If plot_food is True,
+            # we plot the stocked food on the bottom right
+            if plot_reward:
+                # Mating state
+                text = f"Reward: {reward}"
+                img = cv2.putText(
+                    img,
+                    text,
+                    org=(20, 100),
+                    fontFace=cv2.FONT_HERSHEY_DUPLEX,
+                    fontScale=0.8,
+                    color=(0, 0, 0),
+                    lineType=cv2.LINE_AA,
+                    thickness=1,
+                )
+
             return self._frames[-1]
         else:
             raise NotImplementedError
+
 
     def _update_cam_pos(self):
         cam = self.physics.bind(self._cam)
@@ -2294,33 +2313,26 @@ class NeuroMechFly(gym.Env):
         """
         # Convert the dictionary that stores the smells and their
         # valence into an array
-        scores = np.array([*self.key_odor_scores.values()])
+        scores = np.array(list(self.key_odor_scores.values()))
+        possible_idxs = []
+        odor_key = 0
         # If any of the scores are 0, choose a random index where the score is 0
         if np.any(scores < 1e-10):
-            idxs = np.where(scores < 1e-10)[0]
-            return np.random.choice(idxs)
-        # If non of the scores are 0
+            odor_key_idx = np.random.choice(np.where(scores < 1e-10)[0])
+            odor_key = list(self.key_odor_scores.keys())[odor_key_idx]
+        # If none of the scores are 0
         else:
-            chosen_source = None
             inv_scores = 101 - scores
             # Choose the index in a random manner according to the inverse scores
             sum_inv_scores = np.sum(inv_scores)
             rand_int = np.random.randint(0, sum_inv_scores, dtype=np.int64())
-            for i in range(len(inv_scores)):
-                if rand_int < np.sum(inv_scores[: i + 1]):
-                    chosen_source = i
-                    break
-            # look at the different possible sources associated to the chosen smell
-            # choose one randomly betwenn the possible ones
-            key = list(self.key_odor_scores)[chosen_source]
-            possible_sources = []
-            for el in range(len(self.arena.peak_odor_intensity)):
-                if key == self.arena.compute_smell_angle_value(
-                    self.arena.peak_odor_intensity[el]
-                ):
-                    possible_sources.append(el)
-            source_idx = random.choice(possible_sources)
-            return source_idx
+            for index_source in range(len(inv_scores)):
+                if rand_int < np.sum(inv_scores[: index_source + 1]):
+                    odor_key = list(self.key_odor_scores.keys())[index_source]
+        for i, s in enumerate(self.arena.food_sources):
+                if np.abs(self.arena.compute_smell_angle_value(s.peak_intensity) - odor_key) < 1e-5:
+                    possible_idxs.append(i)
+        return np.random.choice(possible_idxs)
 
     def update_odor_scores(self, idx_odor_source=-1) -> None:
         """
