@@ -55,7 +55,11 @@ class OdorArenaEnriched(OdorArena):
         For each smell, a value for the key of the dictionary is computed
         to which the valence of the smell is associated in the dictionary.
     num_phantom_sources : int
-        Number of phantom sources to be added to the arena.
+        Number of phantom sources to be added to the arena
+    phantom_sources : list
+        List of the phantom sources available on the arena
+    key_odor_colors : dict
+        Dictionary that associates to each different smell a color for the plot
     """
 
     def __init__(

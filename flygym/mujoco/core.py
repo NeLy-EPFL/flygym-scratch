@@ -1448,6 +1448,11 @@ class NeuroMechFly(gym.Env):
         plot_confidence : bool
             This parameters decide if we want to plot as well
             the confidence levels with respect to each source
+        plot_reward : bool
+            This parameters decide if we want to plot as well
+            the reward received by the fly once a new source is reacehed
+        reward : int
+            The value of the received reward. By default it is 0
 
         Returns
         -------
@@ -2244,7 +2249,7 @@ class NeuroMechFly(gym.Env):
         Returns
         -------
         index_source : float
-            the index of the closest yeast source
+            the index of the closest source
         """
 
         distance = np.inf
@@ -2281,7 +2286,7 @@ class NeuroMechFly(gym.Env):
         Returns
         -------
         index_source : float
-            the index of the closest yeast source
+            the index of the next source to be reached
         """
         scores = self.odor_scores
         # If any of the scores are 0, choose a random index where the score is 0
@@ -2311,7 +2316,7 @@ class NeuroMechFly(gym.Env):
         Returns
         -------
         index_source : float
-            the index of the closest yeast source
+            the index of the next source to be reached
         """
         # Convert the dictionary that stores the smells and their
         # valence into an array
