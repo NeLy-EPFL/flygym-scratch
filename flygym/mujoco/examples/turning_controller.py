@@ -310,12 +310,12 @@ class HybridTurningNMF(NeuroMechFly):
                     ]
                 )
             )
-            print(
+            logging.info(
                 "Adding real source at position",
                 self.arena.phantom_sources[0].position,
                 ", with rgba",
                 rgba,
-                "and with valence", 
+                "and with valence",
                 odor_valence,
             )
             self.arena.valence_dictionary[odor_key] = round(odor_valence)
@@ -323,8 +323,6 @@ class HybridTurningNMF(NeuroMechFly):
             self.key_odor_scores[odor_key] = round(odor_confidence)
             self.arena.add_source(self.arena.phantom_sources[0])
             self.arena.phantom_sources.pop(0)
-
-            
 
     def move_source(self, source_index, new_pos=np.empty(0)) -> None:
         """

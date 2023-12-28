@@ -147,9 +147,7 @@ class OdorArenaEnriched(OdorArena):
         # The color associated to each different smell is needed later for plotting
         self.key_odor_colors = {}
         for source in self.food_sources:
-            smell_key_value = self.compute_smell_angle_value(
-                source.peak_intensity
-            )
+            smell_key_value = self.compute_smell_angle_value(source.peak_intensity)
             self.key_odor_colors.update({smell_key_value: source.marker_color})
 
     def compute_new_valence(self, peak_intensity_x, peak_intensity_y) -> float:
@@ -251,9 +249,7 @@ class OdorArenaEnriched(OdorArena):
         self.odor_valence = np.array(
             [source.odor_valence for source in self.food_sources]
         )
-        smell_key_value = self.compute_smell_angle_value(
-            new_source.peak_intensity
-        )
+        smell_key_value = self.compute_smell_angle_value(new_source.peak_intensity)
         self.key_odor_colors.update({smell_key_value: new_source.marker_color})
         self.num_odor_sources += 1
 

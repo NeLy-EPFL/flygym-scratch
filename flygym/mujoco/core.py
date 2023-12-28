@@ -472,7 +472,6 @@ class NeuroMechFly(gym.Env):
         self.odor_score_reach_addition = odor_score_reach_addition
         self.odor_score_time_loss = odor_score_time_loss
 
-
         if self.simulation_time <= 0:
             raise ValueError("Simulation time must be greater than zero.")
 
@@ -664,7 +663,6 @@ class NeuroMechFly(gym.Env):
             "render_modes": ["saved", "headless"],
             "render_fps": sim_params.render_fps,
         }
-
 
     def _configure_eyes(self):
         for name in ["LEye_cam", "REye_cam"]:
@@ -1428,7 +1426,12 @@ class NeuroMechFly(gym.Env):
         return observation, reward, terminated, truncated, info
 
     def render(
-        self, plot_internal_state=False, plot_mating_state=False, plot_confidence=False, plot_reward=False, reward=0
+        self,
+        plot_internal_state=False,
+        plot_mating_state=False,
+        plot_confidence=False,
+        plot_reward=False,
+        reward=0,
     ) -> Union[np.ndarray, None]:
         """Call the ``render`` method to update the renderer. It should be
         called every iteration; the method will decide by itself whether
@@ -1536,7 +1539,7 @@ class NeuroMechFly(gym.Env):
                 for i, key in enumerate(self.key_odor_scores.keys()):
                     confidence = self.key_odor_scores[key]
                     c = self.arena.key_odor_colors[key]
-                    color = [int(comp*255) for comp in c[:3]]
+                    color = [int(comp * 255) for comp in c[:3]]
                     img = cv2.rectangle(
                         img,
                         (width - i * 15 - 5, 125),
@@ -1566,7 +1569,6 @@ class NeuroMechFly(gym.Env):
             return self._frames[-1]
         else:
             raise NotImplementedError
-
 
     def _update_cam_pos(self):
         cam = self.physics.bind(self._cam)
@@ -2330,8 +2332,13 @@ class NeuroMechFly(gym.Env):
                 if rand_int < np.sum(inv_scores[: index_source + 1]):
                     odor_key = list(self.key_odor_scores.keys())[index_source]
         for i, s in enumerate(self.arena.food_sources):
-                if np.abs(self.arena.compute_smell_angle_value(s.peak_intensity) - odor_key) < 1e-5:
-                    possible_idxs.append(i)
+            if (
+                np.abs(
+                    self.arena.compute_smell_angle_value(s.peak_intensity) - odor_key
+                )
+                < 1e-5
+            ):
+                possible_idxs.append(i)
         return np.random.choice(possible_idxs)
 
     def update_odor_scores(self, idx_odor_source=-1) -> None:
@@ -2367,7 +2374,9 @@ class NeuroMechFly(gym.Env):
         idx_odor_source: float
             The index of the source that has been reached.
         """
-        print(f"Updating for odor source {idx_odor_source} at position {self.arena.food_sources[idx_odor_source].position} and color {self.arena.food_sources[idx_odor_source].marker_color}")
+        logging.info(
+            f"Updating for odor source {idx_odor_source} at position {self.arena.food_sources[idx_odor_source].position} and color {self.arena.food_sources[idx_odor_source].marker_color}"
+        )
         for key, values in self.key_odor_scores.items():
             self.key_odor_scores[key] = values - self.odor_score_time_loss
         key_to_update = self.arena.compute_smell_angle_value(
