@@ -1452,7 +1452,8 @@ class NeuroMechFly(gym.Env):
             This parameters decide if we want to plot as well
             the reward received by the fly once a new source is reacehed
         reward : int
-            The value of the received reward. By default it is 0
+            The value of the received reward to be plotted. 
+            By default it is 0
 
         Returns
         -------
@@ -1558,7 +1559,7 @@ class NeuroMechFly(gym.Env):
             # If plot_food is True,
             # we plot the stocked food on the bottom right
             if plot_reward:
-                # Mating state
+                # Reward value 
                 text = f"Reward: {reward}"
                 img = cv2.putText(
                     img,
