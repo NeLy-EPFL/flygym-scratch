@@ -19,7 +19,7 @@ class FoodSource:
     stock : int
         The number of times the fly can still visit the source before its stock runs out.
     stock_init : int
-        The initial number of times a fly can visit each source before its stock runs out. By
+        The number of times a fly can visit each source before its stock runs out. By
         default it is 2.
     """
 

@@ -568,12 +568,12 @@ class OdorArena(BaseArena):
 
     def compute_richest_yeast_source(self) -> float:
         """
-        This function find the reachest source of yeast
+        This function find the richest source of yeast
         (the one that has the highest reward)
 
         Returns:
         -------
-        float : the index of the reachest source of yeast
+        float : the index of the richest source of yeast
         """
         arena_valence_dict = self.valence_dictionary
         found_key = True
@@ -589,12 +589,12 @@ class OdorArena(BaseArena):
 
     def compute_richest_source(self) -> float:
         """
-        This function find the reachest source
+        This function find the richest source
         (the one that has the highest reward)
 
         Returns:
         -------
-        float : the index of the reachest source
+        float : the index of the richest source
         """
         arena_valence_dict = self.valence_dictionary
         max_key = max(arena_valence_dict, key=arena_valence_dict.get)

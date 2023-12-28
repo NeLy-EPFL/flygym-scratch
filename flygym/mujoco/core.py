@@ -1452,7 +1452,7 @@ class NeuroMechFly(gym.Env):
             This parameters decide if we want to plot as well
             the reward received by the fly once a new source is reacehed
         reward : int
-            The value of the received reward to be plotted. 
+            The value of the received reward to be plotted.
             By default it is 0
 
         Returns
@@ -1559,7 +1559,7 @@ class NeuroMechFly(gym.Env):
             # If plot_food is True,
             # we plot the stocked food on the bottom right
             if plot_reward:
-                # Reward value 
+                # Reward value
                 text = f"Reward: {reward}"
                 img = cv2.putText(
                     img,
@@ -1956,7 +1956,7 @@ class NeuroMechFly(gym.Env):
         Returns
         -------
         reward: float
-            The reward
+            The reward value
         """
         reward = None
         # Check whether the arena is an OdorArenaEnriched or an OdorArena
@@ -2193,7 +2193,7 @@ class NeuroMechFly(gym.Env):
     def compute_internal_state(self) -> str:
         """
         Return the internal state of the fly
-        given the AAs' levels.
+        given the food stock levels.
         """
         # Define fly internal state
         if self.food_stocked_curr > self.food_requirements[0]:
@@ -2278,7 +2278,7 @@ class NeuroMechFly(gym.Env):
         """
         This function acts as the decision module during exploration to see which
         odor the fly will explore. It returns the index of the odor that the fly will
-        explore according to the food scores table. It should be called only either
+        explore according to the food scores table. It should be called either
         at the start of the exploration or after reaching one of the odor sources.
         If any of the scores are 0, then the fly will explore one of the odors that has
         such a score. If none are 0, then the fly will explore the odors with
@@ -2309,7 +2309,7 @@ class NeuroMechFly(gym.Env):
         This function acts as the decision module during exploration to see which
         odor the fly will explore. It returns the index of the odor (chosen randomly)
         that the fly will explore according to the key food scores table. It should be called
-        only either at the start of the exploration or after reaching one of the odor sources.
+        either at the start of the exploration or after reaching one of the odor sources.
         If any of the scores are 0, then the fly will explore one of the odors that has
         such a score. If none are 0, then the fly will explore the odors with
         probabilities depending on their associated scores.
@@ -2373,7 +2373,7 @@ class NeuroMechFly(gym.Env):
     def update_odor_scores_key(self, idx_odor_source=-1) -> None:
         """
         This function updates the key odor scores dictionary depending on
-        which odor source is reached, if any.
+        which odor source has been reached, if any.
 
         Parameters
         ----------

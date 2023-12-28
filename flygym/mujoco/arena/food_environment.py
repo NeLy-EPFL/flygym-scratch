@@ -59,7 +59,13 @@ class OdorArenaEnriched(OdorArena):
     phantom_sources : list
         List of the phantom sources available on the arena
     key_odor_colors : dict
-        Dictionary that associates to each different smell a color for the plot
+        Dictionary that maps each different smell to a color for the plot
+    key_angle : bool
+        This booleans decides how to compute the key
+        used in the valence dictionary for the different sources.
+        If true, the key is computed considering the different odor sources
+        (a smell is characterized by the angle its odor_peak intensity components form
+        in the complex plane) else it is computed for the different food sources
     """
 
     def __init__(
@@ -156,9 +162,10 @@ class OdorArenaEnriched(OdorArena):
 
     def compute_new_valence(self, peak_intensity_x, peak_intensity_y) -> float:
         """
-        This method is used to compute the valence of a new odor source added later during the simulation to the arena.
-        The new valence is computed using the cosine similarity with the other sources already present in the arena.
-        If a negative valence is computed, it is set equal to 0.
+        This method is used to compute the valence of a new odor source added later during the simulation to the OdorArenaEnriched.
+        The new valence is computed using the cosine similarity with the other sources already presented on the arena
+        if the odor source is not known; otherwise, the valence already memorized for that odor is returned.
+        If a negative valence is computed, its value is set to 0.
 
         Parameters
         ----------
@@ -174,16 +181,22 @@ class OdorArenaEnriched(OdorArena):
         """
         valence_level = 0
         peak_intensity = np.array([peak_intensity_x, peak_intensity_y])
-        normalized_peak_intensity = self.normalize_peak_intensity(peak_intensity)
-        for el in range(len(self.food_sources)):
-            normalized_el = self.normalize_peak_intensity(self.peak_odor_intensity[el])
-            angle_rad = np.arccos(np.dot(normalized_el, normalized_peak_intensity))
-            angle_deg = np.degrees(angle_rad)
-            cosine = np.cos(angle_deg)
-            valence_el = self.valence_dictionary.get(
-                self.compute_smell_angle_value(self.peak_odor_intensity[el])
-            )
-            valence_level += valence_el * cosine
+        new_key = self.compute_smell_angle_value(peak_intensity)
+        if new_key in self.valence_dictionary:
+            valence_level = self.valence_dictionary.get(new_key)
+        else:
+            normalized_peak_intensity = self.normalize_peak_intensity(peak_intensity)
+            for el in range(len(self.food_sources)):
+                normalized_el = self.normalize_peak_intensity(
+                    self.peak_odor_intensity[el]
+                )
+                angle_rad = np.arccos(np.dot(normalized_el, normalized_peak_intensity))
+                angle_deg = np.degrees(angle_rad)
+                cosine = np.cos(angle_deg)
+                valence_el = self.valence_dictionary.get(
+                    self.compute_smell_angle_value(self.peak_odor_intensity[el])
+                )
+                valence_level += valence_el * cosine
         if valence_level < 0:
             valence_level = 0
 
