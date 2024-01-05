@@ -426,7 +426,7 @@ if __name__ == "__main__":
             if (heading_truth[i] - heading_truth[i-1]) < -180 and i != 0:
                 heading_truth[i] += 360
             elif (heading_truth[i] - heading_truth[i-1]) > 180 and i != 0:
-                heading_truths[i]-=360
+                heading_truth[i]-=360
 
     timestamps = np.linspace(0,run_time,len(heading_truth))   
     plt.plot(timestamps,heading_truth,label= 'Ground truth' )
