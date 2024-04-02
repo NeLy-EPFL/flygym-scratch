@@ -1,3 +1,12 @@
+> [!IMPORTANT]  
+> This repository was used for student projects at the EPFL Neuroengineering Laboratory and it is now archived. For the NeuroMechFly repository, check [here](https://github.com/NeLy-EPFL/flygym).
+
+---
+
+**========== ARCHIVED CONTENT BELOW ==========**
+
+---
+
 ## Simulating embodied sensorimotor control with NeuroMechFly 2.0
 
 [**Documentation**](https://neuromechfly.org/) | [**Preprint**](https://www.biorxiv.org/content/10.1101/2023.09.18.556649) | [**Discussion Board**](https://github.com/NeLy-EPFL/flygym/discussions)
